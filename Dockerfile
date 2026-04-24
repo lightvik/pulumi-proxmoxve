@@ -1,37 +1,37 @@
+ARG PULUMI_VERSION=3.232.0
+ARG PROXMOXVE_VERSION=8.0.0
+
+FROM oraclelinux:10-slim
+
 ARG PULUMI_VERSION
+ARG PROXMOXVE_VERSION
 
-FROM pulumi/pulumi:${PULUMI_VERSION}
+RUN microdnf install -y \
+        python3 \
+        python3-pip \
+        curl \
+        tar \
+        gzip \
+    && microdnf clean all
 
-ARG PROXMOXVE_PLUGIN_VERSION
-ARG IMAGE_AUTHOR='lightvik@yandex.ru'
-ARG ARCH='amd64'
-ARG OS='linux'
+RUN curl -fsSL "https://get.pulumi.com/releases/sdk/pulumi-v${PULUMI_VERSION}-linux-x64.tar.gz" \
+    | tar -xz -C /usr/local/bin --strip-components=1
 
-LABEL org.opencontainers.image.authors="${IMAGE_AUTHOR}"
+RUN pip3 install --no-cache-dir \
+        pulumi \
+        "pulumi-proxmoxve==${PROXMOXVE_VERSION}" \
+        pydantic \
+        pyyaml \
+        jinja2
 
-VOLUME /root/.pulumi
+ENV PULUMI_BACKEND_URL=file:///workspace/pulumi-state
+ENV PULUMI_CONFIG_PASSPHRASE=""
+ENV PULUMI_PYTHON_CMD=python3
+ENV PYTHONPATH=/workspace/sources
 
-RUN apt update \
-&& apt install -y bash-completion \
-&& apt clean
+WORKDIR /workspace
 
-RUN pulumi gen-completion bash > /etc/bash_completion.d/pulumi
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
 
-COPY --chown=root:root --chmod=0644 .bashrc /root/.bashrc
-
-RUN pip install jinjanator
-
-RUN curl \
---location \
-"https://github.com/muhlba91/pulumi-proxmoxve/releases/download/v${PROXMOXVE_PLUGIN_VERSION}/pulumi-resource-proxmoxve-v${PROXMOXVE_PLUGIN_VERSION}-${OS}-${ARCH}.tar.gz" \
---output /tmp/proxmove.tar.gz \
-&& \
-pulumi plugin install resource proxmoxve ${PROXMOXVE_PLUGIN_VERSION} -f /tmp/proxmove.tar.gz \
-&& \
-rm --force /tmp/proxmove.tar.gz
-
-RUN pulumi login --local
-
-WORKDIR /projects
-
-ENTRYPOINT []
+CMD ["/entrypoint.sh"]

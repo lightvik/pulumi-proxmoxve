@@ -1,0 +1,338 @@
+{#
+==============================================================================
+  INVENTORY.YAML.J2  —  Полный справочник конфигурации
+==============================================================================
+
+  Файл является Jinja2-шаблоном. При старте контейнера рендерится в
+  /workspace/inventory.yaml, с которым работают Pulumi-стеки.
+
+  JINJA2 — КРАТКАЯ СПРАВКА
+  ──────────────────────────────────────────────────────────────────────────
+
+  Переменные из окружения (docker run -e VAR=val):
+      {{ env.MY_VAR }}
+      {{ env.get('MY_VAR', 'default') }}   ← с fallback
+
+  Переменные внутри шаблона:
+      {% set my_var = "value" %}
+      {{ my_var }}
+
+  Импорт данных из другого YAML-файла (путь относительно inventory.yaml.j2):
+      {% set secrets = load_yaml('secrets.yaml') %}
+      {{ secrets.api_token }}
+
+  Условия:
+      {% if env.get('ENABLE_SDN') == 'true' %}
+      sdn:
+        ...
+      {% endif %}
+
+  Циклы:
+      {% for i in range(1, 4) %}
+      - name: node{{ i }}
+      {% endfor %}
+
+  Комментарии Jinja2 (не попадают в итоговый файл):
+      {# это комментарий #}
+
+  Комментарии YAML (попадают в итоговый файл):
+      # это комментарий
+
+==============================================================================
+#}
+
+{# ── Переменные шаблона ─────────────────────────────────────────────── #}
+{# Задайте через docker run -e, или измените значения по умолчанию здесь #}
+
+{% set proxmox_node = env.get('PROXMOX_NODE', 'pve') %}
+
+# ==============================================================================
+# PROVIDER
+# ==============================================================================
+provider:
+  endpoint: {{ env.PROXMOX_ENDPOINT }}
+  insecure: true
+  api_token: {{ env.PROXMOX_TOKEN }}
+  # Формат токена: user@realm!token-id=token-secret
+  # Пример:        root@pam!pulumi=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+
+# ==============================================================================
+# NETWORK
+# ==============================================================================
+network:
+  domain: example.lan
+  dns_servers:
+    - 1.1.1.1
+    - 8.8.8.8
+  zones:
+    # Имя зоны используется как reference в networks VM
+    internal:
+      bridge: vmbr0
+      cidr: 10.0.0.0/24
+      gateway: 10.0.0.1
+    # external:
+    #   bridge: vmbr1
+    #   cidr: 192.168.1.0/24
+    #   gateway: 192.168.1.1
+
+# ==============================================================================
+# TEMPLATE  —  параметры шаблонной VM (создаётся template-стеком)
+# ==============================================================================
+template:
+  vmid: 9000
+  iso_datastore: local
+  iso_file: ubuntu-24.04-live-server-amd64.iso
+
+# ==============================================================================
+# DOWNLOADS  —  скачивание ISO через Proxmox API (опционально)
+# ==============================================================================
+# downloads:
+#   - name: ubuntu-24-04
+#     node: {{ proxmox_node }}
+#     datastore: local
+#     url: https://releases.ubuntu.com/24.04/ubuntu-24.04.1-live-server-amd64.iso
+#     filename: ubuntu-24.04-live-server-amd64.iso
+#     content_type: iso          # iso | vztmpl | snippets
+#     # checksum: "sha256:abc..."
+#     # checksum_algorithm: sha256
+#     # overwrite: false
+#     # verify: true
+#     # decompression_algorithm: gz
+
+# ==============================================================================
+# POOLS  —  логические группы для организации VM
+# ==============================================================================
+# pools:
+#   - id: production
+#     comment: "Production VMs"
+#   - id: staging
+#     comment: "Staging environment"
+
+# ==============================================================================
+# HA GROUPS  —  группы High Availability
+# ==============================================================================
+# ha_groups:
+#   - name: critical
+#     comment: "Critical infrastructure VMs"
+#     no_failback: false     # запретить возврат на основную ноду
+#     restricted: false      # миграция только внутри группы
+#     nodes:
+#       - node: pve1
+#         priority: 3        # выше = предпочтительнее
+#       - node: pve2
+#         priority: 2
+
+# ==============================================================================
+# SDN  —  Software Defined Networking (опционально)
+# ==============================================================================
+{% if env.get('ENABLE_SDN') == 'true' %}
+sdn:
+  zones:
+    - name: myzone
+      type: simple           # simple | qinq | vxlan | evpn
+      comment: "Main SDN zone"
+      bridge: vmbr0
+      mtu: 1500
+      # nodes: [pve1, pve2]  # пусто = все ноды
+  vnets:
+    - name: myvnet
+      zone: myzone
+      comment: "Production vnet"
+      # tag: 100             # VLAN tag
+      # vlan_aware: false
+  subnets:
+    - cidr: 10.100.0.0/24
+      vnet: myvnet
+      gateway: 10.100.0.1
+      # snat: false
+{% endif %}
+
+# ==============================================================================
+# DEFAULTS  —  параметры по умолчанию для всех VM
+# ==============================================================================
+# Параметры VM наследуются из defaults, переопределяются на уровне VM.
+
+defaults:
+  node: {{ proxmox_node }}
+  bios: seabios              # seabios | ovmf (UEFI)
+
+  # ── CPU ────────────────────────────────────────────────────────────────
+  cpu:
+    cores: 2
+    type: host               # host | kvm64 | penryn | nehalem | ...
+    # sockets: 1
+    # numa: true
+    # affinity: "0-3"        # привязка к ядрам хоста
+    # flags: "aes=require;avx=require"
+    # hotplugged: 1          # CPU hotplug
+    # limit: 100             # макс. % одного ядра
+    # units: 1024
+
+  # ── Memory ─────────────────────────────────────────────────────────────
+  memory:
+    dedicated: 2048          # MB
+    # floating: 1024         # плавающая память
+    # hugepages: true        # huge pages (требует настройки хоста)
+    # keep_hugepages: true
+    # shared: 512
+
+  # ── Disks ──────────────────────────────────────────────────────────────
+  disks:
+    - size: 32               # GB
+      datastore: local-zfs
+      # aio: native          # native | writeback | writethrough
+      # backup: true
+      # cache: writeback     # none | directsync | writethrough | writeback | unsafe
+      # discard: "on"
+      # file_format: raw     # qcow2 | raw
+      # file_id: "local:iso/disk.img"    # импорт существующего образа
+      # import_from: "local:iso/disk.img"
+      # iothread: true
+      # replicate: false
+      # serial: "my-disk-001"
+      # speed: 500           # MB/s
+      # ssd: true
+
+  # ── Network ────────────────────────────────────────────────────────────
+  # networks: []             # сети задаются на уровне каждой VM
+
+  # ── Agent ──────────────────────────────────────────────────────────────
+  agent:
+    enabled: true
+    trim: true
+    type: virtio
+    # timeout: 30
+    # wait_for_ip: true
+
+  # ── Boot ───────────────────────────────────────────────────────────────
+  # boot_orders: ["scsi0", "net0"]
+  # on_boot: true            # запускать при старте Proxmox
+  # started: true            # запустить сразу после создания
+  # stop_on_destroy: true
+
+  # ── OVMF / EFI (только если bios: ovmf) ───────────────────────────────
+  # efi_disk:
+  #   datastore_id: local-zfs
+  #   file_format: raw
+  #   type: "4m"
+  #   pre_enrolled_keys: false
+
+  # ── Startup order ──────────────────────────────────────────────────────
+  # startup:
+  #   order: 1
+  #   up_delay: 30
+  #   down_delay: 30
+
+  # ── Advanced ───────────────────────────────────────────────────────────
+  # acpi: true
+  # hotplug: "disk,network,cpu"
+  # keyboard_layout: "en-us"
+  # kvm_arguments: "-object rng-random,id=rng0,filename=/dev/urandom"
+  # machine: "q35"
+  # pool_id: "production"
+  # protection: false
+  # scsi_hardware: "virtio-scsi-pci"
+  # tablet_device: true
+  # tags: ["pulumi", "production"]
+
+  # ── VGA ────────────────────────────────────────────────────────────────
+  # vga:
+  #   type: std              # std | vmware | qxl | serial0
+  #   memory: 16             # MB
+  #   clipboard: vnc
+
+  # ── Watchdog ───────────────────────────────────────────────────────────
+  # watchdog:
+  #   model: i6300esb        # i6300esb | ib700
+  #   action: reset          # reset | poweroff | pause | debug
+  #   enabled: true
+
+  # ── TPM ────────────────────────────────────────────────────────────────
+  # tpm_state:
+  #   version: "2.0"
+  #   datastore_id: local
+
+  # ── SMBIOS ─────────────────────────────────────────────────────────────
+  # smbios:
+  #   manufacturer: "My Company"
+  #   product: "VM"
+  #   serial: "VM-001"
+  #   uuid: "550e8400-e29b-41d4-a716-446655440000"
+
+  # ── PCI passthrough ────────────────────────────────────────────────────
+  # hostpcis:
+  #   - device: "0000:01:00.0"
+  #     pcie: true
+  #     rombar: true
+  #     xvga: false
+
+  # ── USB passthrough ────────────────────────────────────────────────────
+  # usbs:
+  #   - host: "5:1"          # Bus:Port или VendorID:ProductID
+  #     usb3: false
+
+  # ── NUMA ───────────────────────────────────────────────────────────────
+  # numas:
+  #   - cpus: "0-3"
+  #     memory: 4096
+  #     hostnodes: "0-1"
+  #     policy: bind         # bind | preferred | interleave
+
+  # ── Таймауты (секунды) ─────────────────────────────────────────────────
+  # timeout_create: 300
+  # timeout_clone: 300
+  # timeout_start_vm: 300
+  # timeout_stop_vm: 300
+  # timeout_reboot: 300
+  # timeout_migrate: 300
+  # timeout_move_disk: 300
+  # timeout_shutdown_vm: 300
+
+# ==============================================================================
+# VMS  —  список VM (клонируются из template)
+# ==============================================================================
+vms:
+  - name: web01
+    vmid: 101
+    networks:
+      - zone: internal
+        host: 10              # IP = cidr_base + host (например 10.0.0.10)
+        # vlan_id: 100
+        # firewall: true
+        # rate_limit: 1000000000   # бит/сек (1 Gbps)
+        # mtu: 1500
+        # mac_address: "52:54:00:12:34:56"
+        # queues: 1
+        # disconnected: false
+
+  - name: db01
+    vmid: 110
+    networks:
+      - zone: internal
+        host: 50
+    cpu:
+      cores: 4
+      type: host
+    memory:
+      dedicated: 8192
+      floating: 4096
+    disks:
+      - size: 50
+        datastore: local-zfs
+      - size: 200
+        datastore: local-zfs
+        cache: writeback
+        ssd: true
+    protection: true
+    # ha:
+    #   enabled: true
+    #   group: critical      # имя из ha_groups
+    #   state: started       # started | stopped | disabled
+    #   max_restart: 2
+    #   max_relocate: 1
+    # clone:
+    #   datastore_id: local-zfs
+    #   full: true
+    # initialization:        # cloud-init переопределение (обычно задаётся автоматически)
+    #   type: nocloud
+    #   datastore_id: local

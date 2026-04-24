@@ -1,3 +1,10 @@
-/projects/*
-!/projects/example
-/pulumi-env.sh
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+.python-version
+projects/*/out/
+Pulumi.*.yaml.bak
+.pulumi/
+*.egg-info/
+dist/

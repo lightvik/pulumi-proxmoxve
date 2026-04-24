@@ -1,9 +1,0 @@
-{%- import 'vars/vm.j2' as virtual_machines %}
-{%- import 'vars/network.j2' as network %}
-
-{%- for vm_name in virtual_machines['custom_properties'].keys()
-    if network['external']['ip_plan'][vm_name] is defined
-    or network['internal']['ip_plan'][vm_name] is defined %}
-{{ vm_name }}.{{ network['domain'] }}:
-  sudo: false
-{%- endfor %}

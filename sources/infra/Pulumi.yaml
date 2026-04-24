@@ -1,0 +1,6 @@
+name: example-infra
+runtime:
+  name: python
+  options:
+    toolchain: pip
+description: Infrastructure VMs for example project

@@ -1,0 +1,6 @@
+name: example-template
+runtime:
+  name: python
+  options:
+    toolchain: pip
+description: Template VM for example project
