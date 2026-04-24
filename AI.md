@@ -18,6 +18,6 @@ The entire project was designed and implemented in collaboration with Claude:
 Claude is a large language model trained by Anthropic to be helpful, harmless, and honest.
 It can reason about code, architecture, and trade-offs — and holds a conversation while doing it.
 
-Model used: **Claude Sonnet 4.6**
+Models used: **Claude Opus 4** for planning and architecture decisions, **Claude Sonnet 4.6** for implementation.
 
-More at: https://www.anthropic.com/claude
+More at: [anthropic.com/claude](https://www.anthropic.com/claude)
