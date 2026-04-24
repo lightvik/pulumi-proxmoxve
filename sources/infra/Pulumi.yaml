@@ -1,6 +1,6 @@
-name: example-infra
+name: proxmoxve-infra
 runtime:
   name: python
   options:
     toolchain: pip
-description: Infrastructure VMs for example project
+description: Infrastructure VMs — cloned from template, managed by Pulumi

@@ -1,6 +1,6 @@
-name: example-template
+name: proxmoxve-template
 runtime:
   name: python
   options:
     toolchain: pip
-description: Template VM for example project
+description: Base template VM — created from ISO, converted to Proxmox template

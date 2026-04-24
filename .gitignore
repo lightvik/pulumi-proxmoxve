@@ -1,10 +1,13 @@
-.venv/
+# Generated files
+inventory.yaml
+
+# Pulumi
+pulumi-state/
+Pulumi.*.yaml
+Pulumi.*.yaml.bak
+.pulumi/
+
+# Python
 __pycache__/
 *.pyc
 *.pyo
-.python-version
-projects/*/out/
-Pulumi.*.yaml.bak
-.pulumi/
-*.egg-info/
-dist/

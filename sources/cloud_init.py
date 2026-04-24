@@ -16,8 +16,6 @@ def build_cloud_init_file(
     content = public_key.apply(
         lambda key: "\n".join([
             "#cloud-config",
-            f"hostname: ${{HOSTNAME}}",
-            f"fqdn: ${{HOSTNAME}}.{inv.network.domain}",
             "manage_etc_hosts: true",
             "users:",
             "  - name: ansible",
