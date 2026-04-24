@@ -1,6 +1,9 @@
 # Generated files
 inventory.yaml
 
+# User config (root-level *.yaml.j2)
+/*.yaml.j2
+
 # Pulumi
 pulumi-state/
 Pulumi.*.yaml

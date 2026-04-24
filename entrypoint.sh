@@ -22,12 +22,18 @@ tmpl_path, out_path = sys.argv[1], sys.argv[2]
 tmpl_dir  = os.path.dirname(os.path.abspath(tmpl_path))
 tmpl_name = os.path.basename(tmpl_path)
 
+jenv = jinja2.Environment(loader=jinja2.FileSystemLoader(tmpl_dir))
+
 def load_yaml(path):
     full = path if os.path.isabs(path) else os.path.join(tmpl_dir, path)
-    with open(full) as f:
-        return yaml.safe_load(f)
+    name = os.path.basename(full)
+    if name.endswith('.j2'):
+        content = jenv.get_template(name).render(env=os.environ)
+    else:
+        with open(full) as f:
+            content = f.read()
+    return yaml.safe_load(content)
 
-jenv = jinja2.Environment(loader=jinja2.FileSystemLoader(tmpl_dir))
 jenv.globals['load_yaml'] = load_yaml
 open(out_path, 'w').write(jenv.get_template(tmpl_name).render(env=os.environ))
 PYEOF
