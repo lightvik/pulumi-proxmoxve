@@ -1,3 +1,6 @@
+<p align="center">
+  <img src="logo.svg" alt="Pulumi proxmoxve" height="80">
+</p>
 # pulumi-proxmoxve
 
 Инструмент для развёртывания виртуальных машин на Proxmox VE через Pulumi (Python).

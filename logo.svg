@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="420" height="80" viewBox="0 0 420 80">
+  <defs>
+    
+    <clipPath id="cl"><rect x="0" y="0" width="40" height="80"></rect></clipPath>
+    <clipPath id="cr"><rect x="40" y="0" width="40" height="80"></rect></clipPath>
+  </defs>
+
+  
+  <polygon points="40,8 67.7,24 67.7,56 40,72 12.3,56 12.3,24" fill="#F7BF2A" clip-path="url(#cl)"></polygon>
+  <polygon points="40,8 67.7,24 67.7,56 40,72 12.3,56 12.3,24" fill="#E57000" clip-path="url(#cr)"></polygon>
+  <line x1="40" y1="8" x2="40" y2="72" stroke="white" stroke-width="1.5" stroke-opacity="0.3"></line>
+
+  
+  <text class="wm" dominant-baseline="middle" y="41" font-size="26" font-weight="700" letter-spacing="-0.3">
+    <tspan x="88" fill="#c49800">Pulumi</tspan><tspan class="nm" font-weight="400" font-size="22"> </tspan><tspan fill="#E57000">proxmoxve</tspan>
+  </text>
+</svg>
