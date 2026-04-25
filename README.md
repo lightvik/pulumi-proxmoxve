@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="logo.svg" alt="Pulumi proxmoxve" height="80">
+  <img src="logo.svg" alt="Pulumi proxmoxve" height="150">
 </p>
 # pulumi-proxmoxve
 
