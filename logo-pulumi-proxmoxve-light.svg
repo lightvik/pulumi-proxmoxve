@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 80" width="480" height="80" role="img" aria-label="pulumi-proxmoxve">
+  <rect x="4" y="54" width="76" height="18" rx="3" fill="none" stroke="#1c1c2e" stroke-width="1.5" opacity="0.3"></rect>
+  <rect x="4" y="36" width="76" height="18" rx="3" fill="none" stroke="#1c1c2e" stroke-width="1.5" opacity="0.6"></rect>
+  <rect x="4" y="18" width="76" height="18" rx="3" fill="none" stroke="#8A3391" stroke-width="2"></rect>
+  <circle cx="14" cy="27" r="3" fill="#8A3391"></circle>
+  <circle cx="14" cy="45" r="3" fill="#1c1c2e" opacity="0.4"></circle>
+  <circle cx="14" cy="63" r="3" fill="#1c1c2e" opacity="0.25"></circle>
+  <text x="22" y="31" style="font-family:&#39;Courier New&#39;,Courier,monospace;font-size:7px;fill:#8A3391;font-weight:700;">+ vm-01</text>
+  <text x="22" y="49" style="font-family:&#39;Courier New&#39;,Courier,monospace;font-size:7px;fill:#1c1c2e;opacity:0.5;">+ vm-02</text>
+  <text x="22" y="67" style="font-family:&#39;Courier New&#39;,Courier,monospace;font-size:7px;fill:#1c1c2e;opacity:0.3;">+ lxc-01</text>
+  <text x="96" y="33" style="font-family:&#39;Courier New&#39;,Courier,monospace;font-size:21px;fill:#1c1c2e;font-weight:700;">pulumi</text>
+  <text x="96" y="61" style="font-family:&#39;Courier New&#39;,Courier,monospace;font-size:21px;fill:#1c1c2e;font-weight:400;">proxmoxve</text>
+</svg>
