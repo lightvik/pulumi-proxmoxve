@@ -173,22 +173,6 @@ sdn:
 
 Справочник всех доступных функций: [`docs/jinja_functions.md`](docs/jinja_functions.md)
 
-## SSH-ключ и cloud-init
-
-Если в `inventory.yaml` есть хотя бы одна VM, при деплое автоматически:
-
-- генерируется ED25519 SSH-ключ (`pulumi_tls`)
-- создаётся cloud-init файл с пользователем `ansible` (группа `wheel`, passwordless sudo)
-- ключ инжектируется в каждую VM через cloud-init
-
-После деплоя приватный ключ доступен через:
-
-```bash
-pulumi stack output ssh_private_key --show-secrets
-```
-
-> **Примечание:** cloud-init создаёт пользователя `ansible` с группой `wheel`. Это стандарт для RHEL/CentOS-систем. На Ubuntu/Debian группу нужно поменять на `sudo` в [`sources/cloud_init.py`](sources/cloud_init.py).
-
 ## Pulumi state
 
-State сохраняется в `pulumi-state/` внутри примонтированного тома — персистентен между запусками. При первом запуске создаётся автоматически (стек `default`).
+State сохраняется в `pulumi-state/` внутри примонтированного тома — персистентен между запусками. При первом запуске создаётся автоматически (стек `stack`).
