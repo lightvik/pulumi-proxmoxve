@@ -120,19 +120,13 @@ vms:
 
 Полный справочник всех параметров: [`docs/inventory.yaml.j2`](docs/inventory.yaml.j2)
 
-### 2. Собрать образ
-
-```bash
-docker build -t pulumi-proxmoxve .
-```
-
-### 3. Запустить деплой
+### 2. Запустить деплой
 
 ```bash
 docker run -it \
   -v "$(pwd):/workspace" \
   -e PROXMOX_TOKEN="root@pam!pulumi=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" \
-  pulumi-proxmoxve
+  ghcr.io/lightvik/pulumi-proxmoxve:latest
 ```
 
 Скрипт интерактивный — перед `pulumi up` запрашивает подтверждение.
