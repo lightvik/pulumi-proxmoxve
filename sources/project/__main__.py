@@ -100,10 +100,10 @@ for spec in inv.replications:
     build_replication(spec, provider)
 
 # ── SDN ──────────────────────────────────────────────────────────────────────
-sdn_zones: dict = {}
-sdn_vnets: dict = {}
-sdn_fabrics_openfabric: dict = {}
-sdn_fabrics_ospf: dict = {}
+sdn_zones: dict[str, pulumi.CustomResource] = {}
+sdn_vnets: dict[str, pulumi.CustomResource] = {}
+sdn_fabrics_openfabric: dict[str, pulumi.CustomResource] = {}
+sdn_fabrics_ospf: dict[str, pulumi.CustomResource] = {}
 if inv.sdn:
     for zone_spec in inv.sdn.zones:
         sdn_zones[zone_spec.name] = build_sdn_zone(zone_spec, provider)
@@ -127,14 +127,17 @@ if inv.sdn:
         build_sdn_applier(inv.sdn.applier, provider)
 
 # ── SSH key + cloud-init ─────────────────────────────────────────────────────
-ssh_key = build_ssh_key()
-first_vm = inv.vms[0] if inv.vms else None
-cloud_init = build_cloud_init_file(
-    node=first_vm.node if first_vm else "pve",
-    datastore=first_vm.disks[0].datastore if first_vm and first_vm.disks else "local",
-    provider=provider,
-    public_key=ssh_key.public_key_openssh,
-)
+ssh_key = None
+cloud_init = None
+if inv.vms:
+    ssh_key = build_ssh_key()
+    first_vm = inv.vms[0]
+    cloud_init = build_cloud_init_file(
+        node=first_vm.node,
+        datastore=first_vm.disks[0].datastore if first_vm.disks else "local",
+        provider=provider,
+        public_key=ssh_key.public_key_openssh,
+    )
 
 # ── VMs ──────────────────────────────────────────────────────────────────────
 # Two-pass: templates first so clones can declare depends_on.
@@ -147,7 +150,7 @@ for spec in inv.vms:
             spec=spec,
             provider=provider,
             depends_on=download_resources or None,
-            cloud_init_file_id=cloud_init.id,
+            cloud_init_file_id=cloud_init.id if cloud_init else None,
         )
         vm_resources[spec.name] = vm
         template_by_vmid[spec.vmid] = vm
@@ -162,7 +165,7 @@ for spec in inv.vms:
         spec=spec,
         provider=provider,
         depends_on=deps or None,
-        cloud_init_file_id=cloud_init.id,
+        cloud_init_file_id=cloud_init.id if cloud_init else None,
     )
     vm_resources[spec.name] = vm
 
@@ -180,15 +183,16 @@ for spec in inv.containers:
     container_resources[spec.name] = ct
 
 # ── Outputs ──────────────────────────────────────────────────────────────────
-pulumi.export("ssh_private_key", pulumi.Output.secret(ssh_key.private_key_openssh))
-pulumi.export("ssh_public_key", ssh_key.public_key_openssh)
+if ssh_key:
+    pulumi.export("ssh_private_key", pulumi.Output.secret(ssh_key.private_key_openssh))
+    pulumi.export("ssh_public_key", ssh_key.public_key_openssh)
 template_vm_names = {s.name for s in inv.vms if s.template}
 pulumi.export(
     "vm_ips",
     pulumi.Output.all(**{
         name: vm.initialization.apply(
             lambda init: init.ip_configs[0].ipv4.address
-            if init and init.ip_configs else "unknown"
+            if init and init.ip_configs and init.ip_configs[0].ipv4 else "unknown"
         )
         for name, vm in vm_resources.items()
         if name not in template_vm_names

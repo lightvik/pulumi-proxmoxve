@@ -8,24 +8,21 @@ def build_ha_group(
     spec: HaGroupSpec,
     provider: proxmox.Provider,
 ) -> proxmox.HagroupLegacy:
-    nodes = (
-        [
-            proxmox.HagroupLegacyNodeArgs(
-                node=n.node,
-                priority=n.priority,
-            )
+    args: dict = {"group": spec.name}
+    if spec.comment is not None:
+        args["comment"] = spec.comment
+    if spec.restricted is not None:
+        args["restricted"] = spec.restricted
+    if spec.no_failback is not None:
+        args["no_failback"] = spec.no_failback
+    if spec.nodes:
+        args["nodes"] = [
+            proxmox.HagroupLegacyNodeArgs(node=n.node, priority=n.priority)
             for n in spec.nodes
         ]
-        if spec.nodes
-        else None
-    )
     return proxmox.HagroupLegacy(
         f"ha-group-{spec.name}",
-        group=spec.name,
-        comment=spec.comment,
-        restricted=spec.restricted,
-        no_failback=spec.no_failback,
-        nodes=nodes,
+        **args,
         opts=pulumi.ResourceOptions(provider=provider),
     )
 
