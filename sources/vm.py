@@ -69,22 +69,34 @@ def build_vm(
                     ipv4=proxmox.VmLegacyInitializationIpConfigIpv4Args(
                         address=c.ipv4.address,
                         gateway=c.ipv4.gateway,
-                    ) if c.ipv4 else None,
+                    )
+                    if c.ipv4
+                    else None,
                     ipv6=proxmox.VmLegacyInitializationIpConfigIpv6Args(
                         address=c.ipv6.address,
                         gateway=c.ipv6.gateway,
-                    ) if c.ipv6 else None,
+                    )
+                    if c.ipv6
+                    else None,
                 )
                 for c in spec.initialization.ip_configs
             ]
         if spec.initialization.user_data_file_id:
-            initialization_args["user_data_file_id"] = spec.initialization.user_data_file_id
+            initialization_args["user_data_file_id"] = (
+                spec.initialization.user_data_file_id
+            )
         if spec.initialization.vendor_data_file_id:
-            initialization_args["vendor_data_file_id"] = spec.initialization.vendor_data_file_id
+            initialization_args["vendor_data_file_id"] = (
+                spec.initialization.vendor_data_file_id
+            )
         if spec.initialization.meta_data_file_id:
-            initialization_args["meta_data_file_id"] = spec.initialization.meta_data_file_id
+            initialization_args["meta_data_file_id"] = (
+                spec.initialization.meta_data_file_id
+            )
         if spec.initialization.network_data_file_id:
-            initialization_args["network_data_file_id"] = spec.initialization.network_data_file_id
+            initialization_args["network_data_file_id"] = (
+                spec.initialization.network_data_file_id
+            )
 
     initialization = proxmox.VmLegacyInitializationArgs(**initialization_args)
 
@@ -152,7 +164,9 @@ def build_vm(
             enabled=spec.cdrom.enabled,
         )
     if spec.delete_unreferenced_disks_on_destroy is not None:
-        vm_args["delete_unreferenced_disks_on_destroy"] = spec.delete_unreferenced_disks_on_destroy
+        vm_args["delete_unreferenced_disks_on_destroy"] = (
+            spec.delete_unreferenced_disks_on_destroy
+        )
     if spec.efi_disk:
         vm_args["efi_disk"] = proxmox.VmLegacyEfiDiskArgs(
             datastore_id=spec.efi_disk.datastore_id,

@@ -133,7 +133,9 @@ def build_node_firewall(
     if spec.nf_conntrack_max is not None:
         args["nf_conntrack_max"] = spec.nf_conntrack_max
     if spec.nf_conntrack_tcp_timeout_established is not None:
-        args["nf_conntrack_tcp_timeout_established"] = spec.nf_conntrack_tcp_timeout_established
+        args["nf_conntrack_tcp_timeout_established"] = (
+            spec.nf_conntrack_tcp_timeout_established
+        )
 
     return proxmox.node.Firewall(
         f"node-firewall-{spec.node}",
@@ -249,8 +251,7 @@ def build_fw_rules(
         args["container_id"] = spec.container_id
     if spec.rules:
         args["rules"] = [
-            proxmox.firewall.RulesLegacyRuleArgs(**r)
-            for r in _build_rules(spec.rules)
+            proxmox.firewall.RulesLegacyRuleArgs(**r) for r in _build_rules(spec.rules)
         ]
 
     return proxmox.firewall.RulesLegacy(

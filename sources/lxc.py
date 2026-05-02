@@ -24,7 +24,9 @@ def build_container(
     ]
 
     init = spec.initialization
-    initialization_args: dict = {"hostname": init.hostname if init and init.hostname else spec.name}
+    initialization_args: dict = {
+        "hostname": init.hostname if init and init.hostname else spec.name
+    }
     if init:
         if init.dns:
             initialization_args["dns"] = proxmox.ContainerLegacyInitializationDnsArgs(
@@ -37,19 +39,25 @@ def build_container(
                     ipv4=proxmox.ContainerLegacyInitializationIpConfigIpv4Args(
                         address=c.ipv4.address,
                         gateway=c.ipv4.gateway,
-                    ) if c.ipv4 else None,
+                    )
+                    if c.ipv4
+                    else None,
                     ipv6=proxmox.ContainerLegacyInitializationIpConfigIpv6Args(
                         address=c.ipv6.address,
                         gateway=c.ipv6.gateway,
-                    ) if c.ipv6 else None,
+                    )
+                    if c.ipv6
+                    else None,
                 )
                 for c in init.ip_configs
             ]
         if init.user_account:
-            initialization_args["user_account"] = proxmox.ContainerLegacyInitializationUserAccountArgs(
-                username=init.user_account.username,
-                password=init.user_account.password,
-                keys=init.user_account.keys,
+            initialization_args["user_account"] = (
+                proxmox.ContainerLegacyInitializationUserAccountArgs(
+                    username=init.user_account.username,
+                    password=init.user_account.password,
+                    keys=init.user_account.keys,
+                )
             )
     initialization = proxmox.ContainerLegacyInitializationArgs(**initialization_args)
 

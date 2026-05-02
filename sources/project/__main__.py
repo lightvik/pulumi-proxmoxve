@@ -169,12 +169,17 @@ for spec in inv.containers:
 template_vm_names = {s.name for s in inv.vms if s.template}
 pulumi.export(
     "vm_ips",
-    pulumi.Output.all(**{
-        name: vm.initialization.apply(
-            lambda init: init.ip_configs[0].ipv4.address
-            if init and init.ip_configs and init.ip_configs[0].ipv4 else "unknown"
-        )
-        for name, vm in vm_resources.items()
-        if name not in template_vm_names
-    }),
+    pulumi.Output.all(
+        **{
+            name: vm.initialization.apply(
+                lambda init: (
+                    init.ip_configs[0].ipv4.address
+                    if init and init.ip_configs and init.ip_configs[0].ipv4
+                    else "unknown"
+                )
+            )
+            for name, vm in vm_resources.items()
+            if name not in template_vm_names
+        }
+    ),
 )

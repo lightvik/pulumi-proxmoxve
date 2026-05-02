@@ -210,7 +210,9 @@ def build_metrics_server(
     if spec.opentelemetry_proto is not None:
         args["opentelemetry_proto"] = spec.opentelemetry_proto
     if spec.opentelemetry_resource_attributes is not None:
-        args["opentelemetry_resource_attributes"] = spec.opentelemetry_resource_attributes
+        args["opentelemetry_resource_attributes"] = (
+            spec.opentelemetry_resource_attributes
+        )
     if spec.opentelemetry_timeout is not None:
         args["opentelemetry_timeout"] = spec.opentelemetry_timeout
     if spec.opentelemetry_verify_ssl is not None:

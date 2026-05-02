@@ -14,10 +14,10 @@ from models import (
 
 _ZONE_CLASSES = {
     "simple": proxmox.sdn.zone.Simple,
-    "vxlan":  proxmox.sdn.zone.Vxlan,
-    "vlan":   proxmox.sdn.zone.Vlan,
-    "evpn":   proxmox.sdn.zone.Evpn,
-    "qinq":   proxmox.sdn.zone.Qinq,
+    "vxlan": proxmox.sdn.zone.Vxlan,
+    "vlan": proxmox.sdn.zone.Vlan,
+    "evpn": proxmox.sdn.zone.Evpn,
+    "qinq": proxmox.sdn.zone.Qinq,
 }
 
 
@@ -27,7 +27,9 @@ def build_sdn_zone(
 ) -> pulumi.CustomResource:
     zone_cls = _ZONE_CLASSES.get(spec.type)
     if zone_cls is None:
-        raise ValueError(f"Unknown SDN zone type: '{spec.type}'. Supported: {list(_ZONE_CLASSES)}")
+        raise ValueError(
+            f"Unknown SDN zone type: '{spec.type}'. Supported: {list(_ZONE_CLASSES)}"
+        )
 
     args: dict = {"resource_id": spec.name}
     if spec.mtu is not None:
@@ -112,7 +114,11 @@ def build_sdn_fabric_openfabric(
     if spec.ip_prefix is not None:
         args["ip_prefix"] = spec.ip_prefix
 
-    cls = proxmox.sdn.fabric.OpenfabricLegacy if spec.legacy else proxmox.sdn.fabric.Openfabric
+    cls = (
+        proxmox.sdn.fabric.OpenfabricLegacy
+        if spec.legacy
+        else proxmox.sdn.fabric.Openfabric
+    )
     return cls(
         f"sdn-fabric-openfabric-{spec.name}",
         **args,
@@ -153,7 +159,11 @@ def build_sdn_fabric_node_openfabric(
     if spec.ip6 is not None:
         args["ip6"] = spec.ip6
 
-    cls = proxmox.sdn.fabric.node.OpenfabricLegacy if spec.legacy else proxmox.sdn.fabric.node.Openfabric
+    cls = (
+        proxmox.sdn.fabric.node.OpenfabricLegacy
+        if spec.legacy
+        else proxmox.sdn.fabric.node.Openfabric
+    )
     return cls(
         f"sdn-fabric-node-openfabric-{spec.fabric_id}-{spec.node_id}",
         **args,
@@ -173,7 +183,11 @@ def build_sdn_fabric_node_ospf(
         "ip": spec.ip,
     }
 
-    cls = proxmox.sdn.fabric.node.OspfLegacy if spec.legacy else proxmox.sdn.fabric.node.Ospf
+    cls = (
+        proxmox.sdn.fabric.node.OspfLegacy
+        if spec.legacy
+        else proxmox.sdn.fabric.node.Ospf
+    )
     return cls(
         f"sdn-fabric-node-ospf-{spec.fabric_id}-{spec.node_id}",
         **args,

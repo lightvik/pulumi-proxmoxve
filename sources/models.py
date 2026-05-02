@@ -54,11 +54,11 @@ class MemorySpec(BaseModel):
 
 class DiskSpec(BaseModel):
     size: int
-    datastore: str                    # maps to datastore_id in proxmox
+    datastore: str  # maps to datastore_id in proxmox
     aio: Optional[str] = None
     backup: Optional[bool] = None
     cache: Optional[str] = None
-    discard: Optional[str] = "on"    # default "on"; pass None to disable
+    discard: Optional[str] = "on"  # default "on"; pass None to disable
     file_format: Optional[str] = None
     file_id: Optional[str] = None
     import_from: Optional[str] = None
@@ -359,9 +359,9 @@ class LxcInitializationSpec(BaseModel):
 
 class NetworkBridgeSpec(BaseModel):
     node: str
-    name: str                            # e.g. vmbr1
-    address: Optional[str] = None        # IPv4/CIDR
-    address6: Optional[str] = None       # IPv6/CIDR
+    name: str  # e.g. vmbr1
+    address: Optional[str] = None  # IPv4/CIDR
+    address6: Optional[str] = None  # IPv6/CIDR
     autostart: Optional[bool] = None
     comment: Optional[str] = None
     gateway: Optional[str] = None
@@ -374,17 +374,17 @@ class NetworkBridgeSpec(BaseModel):
 
 class NetworkVlanSpec(BaseModel):
     node: str
-    name: str                            # e.g. ens18.10 or vlan_lab
+    name: str  # e.g. ens18.10 or vlan_lab
     address: Optional[str] = None
     address6: Optional[str] = None
     autostart: Optional[bool] = None
     comment: Optional[str] = None
     gateway: Optional[str] = None
     gateway6: Optional[str] = None
-    interface: Optional[str] = None      # raw device (required for custom name)
+    interface: Optional[str] = None  # raw device (required for custom name)
     mtu: Optional[int] = None
     timeout_reload: Optional[int] = None
-    vlan: Optional[int] = None           # VLAN tag (required for custom name)
+    vlan: Optional[int] = None  # VLAN tag (required for custom name)
 
 
 # ============================================================================
@@ -449,7 +449,7 @@ class HaGroupSpec(BaseModel):
 class HaSpec(BaseModel):
     enabled: bool = True
     group: Optional[str] = None
-    state: str = "started"       # started | stopped | disabled
+    state: str = "started"  # started | stopped | disabled
     max_restart: Optional[int] = None
     max_relocate: Optional[int] = None
     comment: Optional[str] = None
@@ -463,14 +463,14 @@ class HaSpec(BaseModel):
 class HaRuleSpec(BaseModel):
     name: str
     resource_id: Optional[str] = None
-    affinity: Optional[str] = None         # "required" | "preferred"
+    affinity: Optional[str] = None  # "required" | "preferred"
     comment: Optional[str] = None
     disable: Optional[bool] = None
     nodes: Optional[dict[str, int]] = None  # {node_name: priority}
-    resources: Optional[list[str]] = None   # ["vm:100", "ct:200"]
+    resources: Optional[list[str]] = None  # ["vm:100", "ct:200"]
     rule: Optional[str] = None
     strict: Optional[bool] = None
-    type: Optional[str] = None              # "lxc" | "qemu" | "service" | "storage"
+    type: Optional[str] = None  # "lxc" | "qemu" | "service" | "storage"
 
 
 # ============================================================================
@@ -498,8 +498,8 @@ class BackupJobSpec(BaseModel):
     pool: Optional[str] = None
     node: Optional[str] = None
     enabled: Optional[bool] = None
-    mode: Optional[str] = None              # "snapshot" | "suspend" | "stop"
-    compress: Optional[str] = None          # "0" | "1" | "gzip" | "lzo" | "zstd"
+    mode: Optional[str] = None  # "snapshot" | "suspend" | "stop"
+    compress: Optional[str] = None  # "0" | "1" | "gzip" | "lzo" | "zstd"
     mailnotification: Optional[str] = None  # "always" | "failure"
     mailtos: Optional[list[str]] = None
     notes_template: Optional[str] = None
@@ -537,7 +537,7 @@ class ReplicationSpec(BaseModel):
     comment: Optional[str] = None
     disable: Optional[bool] = None
     rate: Optional[float] = None
-    type: Optional[str] = None              # "local"
+    type: Optional[str] = None  # "local"
 
 
 # ============================================================================
@@ -548,12 +548,12 @@ class ReplicationSpec(BaseModel):
 class FwLogRatelimitSpec(BaseModel):
     enabled: Optional[bool] = None
     burst: Optional[int] = None
-    rate: Optional[str] = None              # e.g. "1/second"
+    rate: Optional[str] = None  # e.g. "1/second"
 
 
 class FwRuleSpec(BaseModel):
-    type: Optional[str] = None              # "in" | "out" | "group"
-    action: Optional[str] = None            # "ACCEPT" | "DROP" | "REJECT"
+    type: Optional[str] = None  # "in" | "out" | "group"
+    action: Optional[str] = None  # "ACCEPT" | "DROP" | "REJECT"
     enabled: Optional[bool] = None
     comment: Optional[str] = None
     source: Optional[str] = None
@@ -569,7 +569,7 @@ class FwRuleSpec(BaseModel):
 
 
 class FwIpsetCidrSpec(BaseModel):
-    name: str                               # CIDR string, e.g. "10.0.0.0/8"
+    name: str  # CIDR string, e.g. "10.0.0.0/8"
     comment: Optional[str] = None
     nomatch: Optional[bool] = None
 
@@ -577,7 +577,7 @@ class FwIpsetCidrSpec(BaseModel):
 class ClusterFirewallSpec(BaseModel):
     enabled: Optional[bool] = None
     ebtables: Optional[bool] = None
-    forward_policy: Optional[str] = None    # "ACCEPT" | "DROP" | "REJECT"
+    forward_policy: Optional[str] = None  # "ACCEPT" | "DROP" | "REJECT"
     input_policy: Optional[str] = None
     output_policy: Optional[str] = None
     log_ratelimit: Optional[FwLogRatelimitSpec] = None
@@ -742,7 +742,7 @@ class RealmLdapSpec(BaseModel):
     filter: Optional[str] = None
     sync_attributes: Optional[str] = None
     sync_defaults_options: Optional[str] = None
-    mode: Optional[str] = None              # "ldap" | "ldaps" | "ldap+starttls"
+    mode: Optional[str] = None  # "ldap" | "ldaps" | "ldap+starttls"
     ssl_version: Optional[str] = None
     ca_path: Optional[str] = None
     cert_path: Optional[str] = None
@@ -776,7 +776,7 @@ class RealmOpenIdSpec(BaseModel):
 class RealmSyncSpec(BaseModel):
     name: str
     realm: Optional[str] = None
-    scope: Optional[str] = None             # "users" | "groups" | "both"
+    scope: Optional[str] = None  # "users" | "groups" | "both"
     dry_run: Optional[bool] = None
     enable_new: Optional[bool] = None
     full: Optional[bool] = None
@@ -804,7 +804,9 @@ class StorageNfsSpec(BaseModel):
     resource_id: str
     server: str
     export: str
-    contents: Optional[list[str]] = None   # ["images", "iso", "vztmpl", "backup", "snippets", "rootdir"]
+    contents: Optional[list[str]] = (
+        None  # ["images", "iso", "vztmpl", "backup", "snippets", "rootdir"]
+    )
     nodes: Optional[list[str]] = None
     disable: Optional[bool] = None
     backups: Optional[bool] = None
@@ -906,7 +908,7 @@ class DownloadFileSpec(BaseModel):
     datastore: str
     url: str
     filename: str
-    content_type: str = "iso"   # iso | vztmpl | snippets
+    content_type: str = "iso"  # iso | vztmpl | snippets
     checksum: Optional[str] = None
     checksum_algorithm: Optional[str] = None
     overwrite: Optional[bool] = None
@@ -921,7 +923,7 @@ class DownloadFileSpec(BaseModel):
 
 class SdnZoneSpec(BaseModel):
     name: str
-    type: str                    # simple | qinq | vxlan | evpn
+    type: str  # simple | qinq | vxlan | evpn
     comment: Optional[str] = None
     bridge: Optional[str] = None
     mtu: Optional[int] = None
@@ -1011,7 +1013,7 @@ class LxcMemorySpec(BaseModel):
 
 class LxcDiskSpec(BaseModel):
     size: int = 4
-    datastore: str = "local"    # maps to datastore_id in proxmox
+    datastore: str = "local"  # maps to datastore_id in proxmox
     acl: Optional[bool] = None
     quota: Optional[bool] = None
     replicate: Optional[bool] = None
@@ -1020,12 +1022,12 @@ class LxcDiskSpec(BaseModel):
 
 class LxcNetworkInterfaceSpec(BaseModel):
     bridge: str
-    name: Optional[str] = None       # auto-assigned as eth{i} if None
+    name: Optional[str] = None  # auto-assigned as eth{i} if None
     enabled: Optional[bool] = None
     firewall: Optional[bool] = None
     mac_address: Optional[str] = None
     mtu: Optional[int] = None
-    rate_limit: Optional[float] = None   # MB/s
+    rate_limit: Optional[float] = None  # MB/s
     vlan_id: Optional[int] = None
 
 
@@ -1039,7 +1041,7 @@ class LxcMountPointSpec(BaseModel):
     read_only: Optional[bool] = None
     replicate: Optional[bool] = None
     shared: Optional[bool] = None
-    size: Optional[str] = None          # e.g. "10G"
+    size: Optional[str] = None  # e.g. "10G"
 
 
 class LxcFeaturesSpec(BaseModel):
@@ -1057,7 +1059,7 @@ class LxcCloneSpec(BaseModel):
 
 class LxcOperatingSystemSpec(BaseModel):
     template_file_id: str
-    type: Optional[str] = None          # ubuntu | debian | alpine | etc.
+    type: Optional[str] = None  # ubuntu | debian | alpine | etc.
 
 
 # ============================================================================
@@ -1165,43 +1167,43 @@ class LxcSpec(BaseModel):
 
 
 class AcmeDnsPluginSpec(BaseModel):
-    name: str                                  # Pulumi resource name (becomes plugin id)
-    plugin: Optional[str] = None               # lego plugin name, e.g. "cloudflare"
-    api: Optional[str] = None                  # API type, e.g. "dns"
-    data: Optional[dict[str, str]] = None      # plugin-specific key/value config
+    name: str  # Pulumi resource name (becomes plugin id)
+    plugin: Optional[str] = None  # lego plugin name, e.g. "cloudflare"
+    api: Optional[str] = None  # API type, e.g. "dns"
+    data: Optional[dict[str, str]] = None  # plugin-specific key/value config
     disable: Optional[bool] = None
-    validation_delay: Optional[int] = None     # seconds
+    validation_delay: Optional[int] = None  # seconds
     digest: Optional[str] = None
 
 
 class AcmeAccountSpec(BaseModel):
-    name: str                                  # account name in Proxmox
-    contact: Optional[str] = None             # mailto:admin@example.com
-    directory: Optional[str] = None            # CA directory URL (Let's Encrypt = default)
-    eab_hmac_key: Optional[str] = None         # External Account Binding HMAC key
-    eab_kid: Optional[str] = None              # External Account Binding key ID
-    tos: Optional[str] = None                  # Terms of Service URL
+    name: str  # account name in Proxmox
+    contact: Optional[str] = None  # mailto:admin@example.com
+    directory: Optional[str] = None  # CA directory URL (Let's Encrypt = default)
+    eab_hmac_key: Optional[str] = None  # External Account Binding HMAC key
+    eab_kid: Optional[str] = None  # External Account Binding key ID
+    tos: Optional[str] = None  # Terms of Service URL
 
 
 class AcmeCertDomainSpec(BaseModel):
-    domain: str                                # e.g. "pve.example.com"
-    plugin: Optional[str] = None              # DNS plugin name (DNS-01) or omit for HTTP-01
-    alias: Optional[str] = None               # alias domain for DNS validation
+    domain: str  # e.g. "pve.example.com"
+    plugin: Optional[str] = None  # DNS plugin name (DNS-01) or omit for HTTP-01
+    alias: Optional[str] = None  # alias domain for DNS validation
 
 
 class AcmeCertificateSpec(BaseModel):
-    name: str                                  # Pulumi resource name
+    name: str  # Pulumi resource name
     node_name: str
-    account: Optional[str] = None             # ACME account name
+    account: Optional[str] = None  # ACME account name
     domains: list[AcmeCertDomainSpec] = []
     force: Optional[bool] = None
-    legacy: bool = False                       # True → acme.CertificateLegacy
+    legacy: bool = False  # True → acme.CertificateLegacy
 
 
 class NodeCertificateSpec(BaseModel):
-    name: str                                  # Pulumi resource name
+    name: str  # Pulumi resource name
     node_name: str
-    certificate: Optional[str] = None         # PEM certificate
+    certificate: Optional[str] = None  # PEM certificate
     certificate_chain: Optional[str] = None
     private_key: Optional[str] = None
     overwrite: Optional[bool] = None
@@ -1227,9 +1229,9 @@ class ClusterOptionsNextIdSpec(BaseModel):
 class ClusterOptionsNotifySpec(BaseModel):
     ha_fencing_mode: Optional[str] = None
     ha_fencing_target: Optional[str] = None
-    package_updates: Optional[str] = None      # "auto" | "always" | "never"
+    package_updates: Optional[str] = None  # "auto" | "always" | "never"
     package_updates_target: Optional[str] = None
-    replication: Optional[str] = None          # "always" | "never"
+    replication: Optional[str] = None  # "always" | "never"
     replication_target: Optional[str] = None
 
 
@@ -1239,25 +1241,27 @@ class ClusterOptionsSpec(BaseModel):
     bandwidth_limit_migration: Optional[int] = None
     bandwidth_limit_move: Optional[int] = None
     bandwidth_limit_restore: Optional[int] = None
-    console: Optional[str] = None              # "applet" | "html5" | "vv" | "xtermjs"
-    crs_ha: Optional[str] = None               # "static" | "basic"
+    console: Optional[str] = None  # "applet" | "html5" | "vv" | "xtermjs"
+    crs_ha: Optional[str] = None  # "static" | "basic"
     crs_ha_rebalance_on_start: Optional[bool] = None
     description: Optional[str] = None
     email_from: Optional[str] = None
-    ha_shutdown_policy: Optional[str] = None   # "freeze" | "failover" | "conditional" | "migrate"
+    ha_shutdown_policy: Optional[str] = (
+        None  # "freeze" | "failover" | "conditional" | "migrate"
+    )
     http_proxy: Optional[str] = None
     keyboard: Optional[str] = None
     language: Optional[str] = None
     mac_prefix: Optional[str] = None
     max_workers: Optional[int] = None
     migration_cidr: Optional[str] = None
-    migration_type: Optional[str] = None       # "secure" | "unsecure"
+    migration_type: Optional[str] = None  # "secure" | "unsecure"
     next_id: Optional[ClusterOptionsNextIdSpec] = None
     notify: Optional[ClusterOptionsNotifySpec] = None
 
 
 class HwPciMapSpec(BaseModel):
-    id: str                                    # PCI device ID, e.g. "0000:01:00.0"
+    id: str  # PCI device ID, e.g. "0000:01:00.0"
     node: str
     path: str
     comment: Optional[str] = None
@@ -1270,28 +1274,28 @@ class HwMappingPciSpec(BaseModel):
     comment: Optional[str] = None
     mediated_devices: Optional[bool] = None
     maps: list[HwPciMapSpec] = []
-    legacy: bool = False                       # True → PciLegacy, False → Pci
+    legacy: bool = False  # True → PciLegacy, False → Pci
 
 
 class HwUsbMapSpec(BaseModel):
-    id: str                                    # USB device ID, e.g. "1234:5678"
+    id: str  # USB device ID, e.g. "1234:5678"
     node: str
     comment: Optional[str] = None
-    path: Optional[str] = None                 # optional port path
+    path: Optional[str] = None  # optional port path
 
 
 class HwMappingUsbSpec(BaseModel):
     name: str
     comment: Optional[str] = None
     maps: list[HwUsbMapSpec] = []
-    legacy: bool = False                       # True → UsbLegacy, False → Usb
+    legacy: bool = False  # True → UsbLegacy, False → Usb
 
 
 class MetricsServerSpec(BaseModel):
     name: str
     disable: Optional[bool] = None
     graphite_path: Optional[str] = None
-    graphite_proto: Optional[str] = None       # "udp" | "tcp"
+    graphite_proto: Optional[str] = None  # "udp" | "tcp"
     influx_api_path_prefix: Optional[str] = None
     influx_bucket: Optional[str] = None
     influx_db_proto: Optional[str] = None
@@ -1311,14 +1315,14 @@ class MetricsServerSpec(BaseModel):
     port: Optional[int] = None
     server: Optional[str] = None
     timeout: Optional[int] = None
-    type: Optional[str] = None                 # "graphite" | "influxdb" | "opentelemetry"
+    type: Optional[str] = None  # "graphite" | "influxdb" | "opentelemetry"
 
 
 class OciImageSpec(BaseModel):
     name: str
     node_name: str
     datastore_id: str
-    reference: str                             # e.g. "docker.io/library/alpine:latest"
+    reference: str  # e.g. "docker.io/library/alpine:latest"
     file_name: Optional[str] = None
     overwrite: Optional[bool] = None
     overwrite_unmanaged: Optional[bool] = None
@@ -1328,8 +1332,8 @@ class OciImageSpec(BaseModel):
 class AptRepositorySpec(BaseModel):
     name: str
     node: str
-    file_path: str                             # e.g. "/etc/apt/sources.list.d/pve.list"
-    index: int                                 # 0-based index within the file
+    file_path: str  # e.g. "/etc/apt/sources.list.d/pve.list"
+    index: int  # 0-based index within the file
     enabled: Optional[bool] = None
 
 
