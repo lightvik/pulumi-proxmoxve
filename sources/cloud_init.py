@@ -1,18 +1,14 @@
 import pulumi
 import pulumi_proxmoxve as proxmox
 
-from models import Inventory
-
 
 def build_cloud_init_file(
-    inv: Inventory,
+    node: str,
+    datastore: str,
     provider: proxmox.Provider,
     public_key: pulumi.Output,
     resource_name: str = "cloud-init-user-data",
 ) -> proxmox.FileLegacy:
-    node = inv.defaults.node
-    datastore = inv.defaults.disks[0].datastore if inv.defaults.disks else "local"
-
     content = public_key.apply(
         lambda key: "\n".join([
             "#cloud-config",

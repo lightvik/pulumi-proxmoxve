@@ -32,6 +32,7 @@ ENV PYTHONPATH=/workspace/sources
 WORKDIR /workspace
 
 COPY entrypoint.sh /entrypoint.sh
+COPY render_helpers.py /render_helpers.py
 RUN chmod +x /entrypoint.sh
 
 CMD ["/entrypoint.sh"]

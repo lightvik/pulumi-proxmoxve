@@ -1,0 +1,6 @@
+name: proxmoxve-project
+runtime:
+  name: python
+  options:
+    toolchain: pip
+description: Proxmox VE infrastructure — VMs and LXC containers, managed by Pulumi

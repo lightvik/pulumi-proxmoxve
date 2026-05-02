@@ -1,6 +1,0 @@
-name: proxmoxve-infra
-runtime:
-  name: python
-  options:
-    toolchain: pip
-description: Infrastructure VMs — cloned from template, managed by Pulumi

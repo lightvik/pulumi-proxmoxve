@@ -1,54 +1,38 @@
-import ipaddress
-
 import pulumi
 import pulumi_proxmoxve as proxmox
 
-from models import Inventory, MergedVMSpec
+from models import VMSpec
 
 
 def build_vm(
-    spec: MergedVMSpec,
-    inv: Inventory,
+    spec: VMSpec,
     provider: proxmox.Provider,
-    template_id: int,
+    depends_on: list | None = None,
     cloud_init_file_id: pulumi.Input[str] | None = None,
 ) -> proxmox.VmLegacy:
-    network_devices = []
-    ip_configs = []
-    for net in spec.networks:
-        zone = inv.network.zones[net.zone]
-        ip = _ip_for_host(zone.cidr, net.host)
-        prefix = _prefix_len(zone.cidr)
-        network_devices.append(
-            proxmox.VmLegacyNetworkDeviceArgs(
-                bridge=zone.bridge,
-                model="virtio",
-                enabled=net.enabled,
-                disconnected=net.disconnected,
-                firewall=net.firewall,
-                mac_address=net.mac_address,
-                mtu=net.mtu,
-                queues=net.queues,
-                rate_limit=net.rate_limit,
-                trunks=net.trunks,
-                vlan_id=net.vlan_id,
-            )
+    network_devices = [
+        proxmox.VmLegacyNetworkDeviceArgs(
+            bridge=net.bridge,
+            model=net.model,
+            enabled=net.enabled,
+            disconnected=net.disconnected,
+            firewall=net.firewall,
+            mac_address=net.mac_address,
+            mtu=net.mtu,
+            queues=net.queues,
+            rate_limit=net.rate_limit,
+            trunks=net.trunks,
+            vlan_id=net.vlan_id,
         )
-        ip_configs.append(
-            proxmox.VmLegacyInitializationIpConfigArgs(
-                ipv4=proxmox.VmLegacyInitializationIpConfigIpv4Args(
-                    address=f"{ip}/{prefix}",
-                    gateway=zone.gateway,
-                )
-            )
-        )
+        for net in spec.networks
+    ]
 
     disks = [
         proxmox.VmLegacyDiskArgs(
             interface=f"scsi{i}",
             size=d.size,
             datastore_id=d.datastore,
-            discard=d.discard or "on",
+            discard=d.discard,
             aio=d.aio,
             backup=d.backup,
             cache=d.cache,
@@ -75,13 +59,25 @@ def build_vm(
             initialization_args["interface"] = spec.initialization.interface
         if spec.initialization.file_format:
             initialization_args["file_format"] = spec.initialization.file_format
-        if spec.initialization.dns or inv.network.dns_servers:
+        if spec.initialization.dns:
             initialization_args["dns"] = proxmox.VmLegacyInitializationDnsArgs(
-                servers=spec.initialization.dns.servers if spec.initialization.dns else inv.network.dns_servers,
-                domain=spec.initialization.dns.domain if spec.initialization.dns else inv.network.domain,
+                servers=spec.initialization.dns.servers,
+                domain=spec.initialization.dns.domain,
             )
-        if spec.initialization.ip_configs or ip_configs:
-            initialization_args["ip_configs"] = spec.initialization.ip_configs or ip_configs
+        if spec.initialization.ip_configs:
+            initialization_args["ip_configs"] = [
+                proxmox.VmLegacyInitializationIpConfigArgs(
+                    ipv4=proxmox.VmLegacyInitializationIpConfigIpv4Args(
+                        address=c.ipv4.address,
+                        gateway=c.ipv4.gateway,
+                    ) if c.ipv4 else None,
+                    ipv6=proxmox.VmLegacyInitializationIpConfigIpv6Args(
+                        address=c.ipv6.address,
+                        gateway=c.ipv6.gateway,
+                    ) if c.ipv6 else None,
+                )
+                for c in spec.initialization.ip_configs
+            ]
         if cloud_init_file_id:
             initialization_args["user_data_file_id"] = cloud_init_file_id
         if spec.initialization.user_data_file_id:
@@ -92,23 +88,21 @@ def build_vm(
             initialization_args["meta_data_file_id"] = spec.initialization.meta_data_file_id
         if spec.initialization.network_data_file_id:
             initialization_args["network_data_file_id"] = spec.initialization.network_data_file_id
-    elif cloud_init_file_id or ip_configs:
-        initialization_args["dns"] = proxmox.VmLegacyInitializationDnsArgs(
-            servers=inv.network.dns_servers,
-            domain=inv.network.domain,
-        )
-        if ip_configs:
-            initialization_args["ip_configs"] = ip_configs
-        if cloud_init_file_id:
-            initialization_args["user_data_file_id"] = cloud_init_file_id
+    elif cloud_init_file_id:
+        initialization_args["user_data_file_id"] = cloud_init_file_id
 
     initialization = proxmox.VmLegacyInitializationArgs(**initialization_args)
+
+    opts = pulumi.ResourceOptions(
+        provider=provider,
+        depends_on=depends_on or [],
+    )
 
     vm_args = {
         "node_name": spec.node,
         "vm_id": spec.vmid,
         "name": spec.name,
-        "description": f"Managed by Pulumi — {spec.name}.{inv.network.domain}",
+        "description": f"Managed by Pulumi — {spec.name}",
         "tags": spec.tags or ["pulumi"],
         "bios": spec.bios,
         "cpu": proxmox.VmLegacyCpuArgs(
@@ -140,15 +134,17 @@ def build_vm(
         "network_devices": network_devices,
         "disks": disks,
         "initialization": initialization,
-        "clone": proxmox.VmLegacyCloneArgs(
-            vm_id=spec.clone.vm_id if (spec.clone and spec.clone.vm_id is not None) else template_id,
-            node_name=spec.clone.node_name if spec.clone else spec.node,
-            full=spec.clone.full if spec.clone else True,
-            datastore_id=spec.clone.datastore_id if spec.clone else None,
-            retries=spec.clone.retries if spec.clone else None,
-        ),
-        "opts": pulumi.ResourceOptions(provider=provider),
+        "opts": opts,
     }
+
+    if spec.clone:
+        vm_args["clone"] = proxmox.VmLegacyCloneArgs(
+            vm_id=spec.clone.vm_id,
+            node_name=spec.clone.node_name or spec.node,
+            full=spec.clone.full,
+            datastore_id=spec.clone.datastore_id,
+            retries=spec.clone.retries,
+        )
 
     if spec.acpi is not None:
         vm_args["acpi"] = spec.acpi
@@ -302,13 +298,13 @@ def build_vm(
             enabled=spec.watchdog.enabled,
             model=spec.watchdog.model,
         )
-    if spec.agent_amd_sev:
+    if spec.amd_sev:
         vm_args["amd_sev"] = proxmox.VmLegacyAmdSevArgs(
-            type=spec.agent_amd_sev.type,
-            allow_smt=spec.agent_amd_sev.allow_smt,
-            kernel_hashes=spec.agent_amd_sev.kernel_hashes,
-            no_debug=spec.agent_amd_sev.no_debug,
-            no_key_sharing=spec.agent_amd_sev.no_key_sharing,
+            type=spec.amd_sev.type,
+            allow_smt=spec.amd_sev.allow_smt,
+            kernel_hashes=spec.amd_sev.kernel_hashes,
+            no_debug=spec.amd_sev.no_debug,
+            no_key_sharing=spec.amd_sev.no_key_sharing,
         )
     if spec.audio_device:
         vm_args["audio_device"] = proxmox.VmLegacyAudioDeviceArgs(
@@ -331,12 +327,3 @@ def build_vm(
         vm_args["started"] = spec.started
 
     return proxmox.VmLegacy(spec.name, **vm_args)
-
-
-def _ip_for_host(cidr: str, host: int) -> str:
-    network = ipaddress.ip_network(cidr, strict=False)
-    return str(network.network_address + host)
-
-
-def _prefix_len(cidr: str) -> int:
-    return ipaddress.ip_network(cidr, strict=False).prefixlen

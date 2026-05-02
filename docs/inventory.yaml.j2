@@ -4,7 +4,7 @@
 ==============================================================================
 
   Файл является Jinja2-шаблоном. При старте контейнера рендерится в
-  /workspace/inventory.yaml, с которым работают Pulumi-стеки.
+  /workspace/inventory.yaml, с которым работает Pulumi-стек.
 
   JINJA2 — КРАТКАЯ СПРАВКА
   ──────────────────────────────────────────────────────────────────────────
@@ -57,34 +57,140 @@ provider:
   # Пример:        root@pam!pulumi=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
 
 # ==============================================================================
-# NETWORK
+# NETWORK BRIDGES  —  Linux-бриджи на узлах Proxmox (опционально)
 # ==============================================================================
-network:
-  domain: example.lan
-  dns_servers:
-    - 1.1.1.1
-    - 8.8.8.8
-  zones:
-    # Имя зоны используется как reference в networks VM
-    internal:
-      bridge: vmbr0
-      cidr: 10.0.0.0/24
-      gateway: 10.0.0.1
-    # external:
-    #   bridge: vmbr1
-    #   cidr: 192.168.1.0/24
-    #   gateway: 192.168.1.1
+# network_bridges:
+#   - node: {{ proxmox_node }}
+#     name: vmbr1                  # имя интерфейса (vmbr0–vmbr4094)
+#     ports: [ens19]               # физические порты бриджа
+#     address: 10.10.0.1/24        # IPv4/CIDR (опционально)
+#     address6: "fd00::1/64"       # IPv6/CIDR (опционально)
+#     gateway: 10.10.0.254         # опционально
+#     gateway6: "fd00::1"          # опционально
+#     vlan_aware: true             # VLAN-aware бридж
+#     autostart: true
+#     mtu: 1500
+#     comment: "Internal network"
+#     # timeout_reload: 100
 
 # ==============================================================================
-# TEMPLATE  —  параметры шаблонной VM (создаётся template-стеком)
+# NETWORK VLANS  —  VLAN-интерфейсы на узлах Proxmox (опционально)
 # ==============================================================================
-template:
-  vmid: 9000
-  iso_datastore: local
-  iso_file: ubuntu-24.04-live-server-amd64.iso
+# network_vlans:
+#   # Вариант 1: имя = интерфейс.тег (interface и vlan не нужны)
+#   - node: {{ proxmox_node }}
+#     name: ens18.10               # VLAN tag берётся из имени
+#     address: 192.168.10.1/24
+#     autostart: true
+#   # Вариант 2: произвольное имя (interface и vlan обязательны)
+#   - node: {{ proxmox_node }}
+#     name: vlan_mgmt
+#     interface: ens18             # raw device
+#     vlan: 100                    # VLAN tag
+#     address: 172.16.0.1/24
+#     gateway: 172.16.0.254
+#     autostart: true
+#     comment: "Management VLAN"
 
 # ==============================================================================
-# DOWNLOADS  —  скачивание ISO через Proxmox API (опционально)
+# NODE DNS  —  настройки DNS на узлах (опционально)
+# ==============================================================================
+# node_dns:
+#   - node: {{ proxmox_node }}
+#     servers: [1.1.1.1, 8.8.8.8]
+#     domain: example.local        # search domain (опционально)
+
+# ==============================================================================
+# NODE HOSTS  —  /etc/hosts на узлах (опционально)
+# ==============================================================================
+# node_hosts:
+#   - node: {{ proxmox_node }}
+#     entries:
+#       - address: 10.0.0.1
+#         hostnames: [pve.example.local, pve]
+#       - address: 10.0.0.2
+#         hostnames: [storage.example.local]
+
+# ==============================================================================
+# NODE TIME  —  часовой пояс на узлах (опционально)
+# ==============================================================================
+# node_time:
+#   - node: {{ proxmox_node }}
+#     time_zone: Europe/Moscow     # TZ из IANA database
+
+# ==============================================================================
+# STORAGES  —  подключение хранилищ к Proxmox (опционально)
+# ==============================================================================
+# storages:
+#
+#   # NFS — сетевое файловое хранилище
+#   nfs:
+#     - resource_id: nfs-data
+#       server: 192.168.1.100
+#       export: /mnt/data
+#       contents: [images, iso, vztmpl, snippets]
+#       nodes: [{{ proxmox_node }}]        # ограничить узлами (опционально)
+#       # backups: true
+#       # options: "vers=4"
+#       # preallocation: off               # off | metadata | falloc | full
+#       # disable: false
+#
+#   # CIFS/SMB — Windows-совместимое хранилище
+#   cifs:
+#     - resource_id: cifs-backup
+#       server: 192.168.1.200
+#       share: backup
+#       username: proxmox
+#       password: {{ env.CIFS_PASSWORD }}
+#       contents: [backup]
+#       # domain: WORKGROUP
+#       # subdirectory: proxmox
+#
+#   # LVM — блочное хранилище на базе LVM
+#   lvm:
+#     - resource_id: lvm-ssd
+#       volume_group: pve-ssd
+#       contents: [images, rootdir]
+#       # shared: false
+#       # wipe_removed_volumes: false
+#
+#   # LVM-thin — тонкое provisioning на базе LVM
+#   lvmthin:
+#     - resource_id: lvmthin-data
+#       volume_group: pve
+#       thin_pool: data
+#       contents: [images, rootdir]
+#
+#   # ZFS pool — хранилище на базе ZFS
+#   zfspool:
+#     - resource_id: zfs-tank
+#       zfs_pool: tank/proxmox
+#       contents: [images, rootdir]
+#       # blocksize: "8k"
+#       # thin_provision: false
+#
+#   # PBS — Proxmox Backup Server
+#   pbs:
+#     - resource_id: pbs-main
+#       server: 192.168.1.50
+#       datastore: main
+#       username: backup-user@pbs
+#       password: {{ env.PBS_PASSWORD }}
+#       contents: [backup]
+#       # fingerprint: "AA:BB:..."        # TLS fingerprint сервера
+#       # namespace: my/namespace
+#       # encryption_key: "..."
+#       # generate_encryption_key: true
+#
+#   # Directory — директория на локальной файловой системе
+#   dir:
+#     - resource_id: local-extra
+#       path: /mnt/extra
+#       contents: [images, iso, vztmpl, backup, snippets]
+#       # shared: false
+
+# ==============================================================================
+# DOWNLOADS  —  скачивание ISO/шаблонов через Proxmox API (опционально)
 # ==============================================================================
 # downloads:
 #   - name: ubuntu-24-04
@@ -98,6 +204,223 @@ template:
 #     # overwrite: false
 #     # verify: true
 #     # decompression_algorithm: gz
+
+# ==============================================================================
+# RBAC  —  роли, группы, пользователи, токены, ACL, realm'ы (опционально)
+# ==============================================================================
+# rbac:
+#
+#   # ── Роли ─────────────────────────────────────────────────────────────────
+#   roles:
+#     - name: vm-operator
+#       role_id: VMOperator          # если не задан — Pulumi назначит
+#       privileges:
+#         - VM.PowerMgmt
+#         - VM.Console
+#         - VM.Audit
+#
+#   # ── Группы ───────────────────────────────────────────────────────────────
+#   groups:
+#     - name: ops-team
+#       group_id: ops                # если не задан — Pulumi назначит
+#       comment: "Operations team"
+#       acls:                        # встроенные ACL-записи группы
+#         - path: /vms
+#           role_id: VMOperator
+#           propagate: true
+#
+#   # ── Пользователи ─────────────────────────────────────────────────────────
+#   users:
+#     - name: alice
+#       user_id: alice@pve           # user@realm
+#       first_name: Alice
+#       last_name: Smith
+#       email: alice@example.com
+#       enabled: true
+#       password: "{{ env.ALICE_PASSWORD }}"
+#       groups: [ops]
+#       # expiration_date: "2027-01-01T00:00:00Z"
+#       # keys: "ssh-ed25519 AAAA..."
+#       acls:                        # встроенные ACL-записи пользователя
+#         - path: /storage/backup
+#           role_id: DatastoreAdmin
+#           propagate: false
+#
+#   # ── Токены API ───────────────────────────────────────────────────────────
+#   user_tokens:
+#     - name: alice-ci
+#       user_id: alice@pve
+#       token_name: ci-token
+#       comment: "CI/CD token"
+#       privileges_separation: true  # токен ограничен правами ниже пользователя
+#       # expiration_date: "2027-01-01T00:00:00Z"
+#
+#   # ── ACL (отдельные записи) ────────────────────────────────────────────────
+#   acls:
+#     - name: ops-root
+#       path: /
+#       role_id: Administrator
+#       group_id: ops
+#       propagate: true
+#     - name: alice-storage
+#       path: /storage/nfs
+#       role_id: DatastoreUser
+#       user_id: alice@pve
+#       # token_id: alice@pve!ci-token  # или токен вместо пользователя
+#
+#   # ── LDAP realm ───────────────────────────────────────────────────────────
+#   realm_ldap:
+#     - name: corp-ldap
+#       realm: corp                  # имя realm в Proxmox
+#       server1: ldap.corp.example.com
+#       # server2: ldap2.corp.example.com  # резервный сервер
+#       port: 389
+#       base_dn: "DC=corp,DC=example,DC=com"
+#       bind_dn: "CN=proxmox,OU=svc,DC=corp,DC=example,DC=com"
+#       bind_password: "{{ env.LDAP_BIND_PASSWORD }}"
+#       user_attr: sAMAccountName
+#       user_classes: person
+#       group_dn: "OU=groups,DC=corp,DC=example,DC=com"
+#       group_classes: group
+#       mode: ldap                   # ldap | ldaps | ldap+starttls
+#       verify: false
+#       default: false
+#       comment: "Corporate LDAP"
+#       sync_attributes: "email=mail,firstname=givenName,lastname=sn"
+#
+#   # ── OpenID Connect realm ──────────────────────────────────────────────────
+#   realm_openid:
+#     - name: keycloak
+#       realm: keycloak
+#       issuer_url: https://keycloak.example.com/realms/proxmox
+#       client_id: proxmox
+#       client_key: "{{ env.OIDC_CLIENT_SECRET }}"
+#       username_claim: preferred_username
+#       scopes: "email profile"
+#       autocreate: true
+#       default: false
+#       comment: "Keycloak SSO"
+#       groups_claim: groups
+#       groups_autocreate: true
+#
+#   # ── Realm Sync ────────────────────────────────────────────────────────────
+#   realm_sync:
+#     - name: corp-sync
+#       realm: corp
+#       scope: both                  # users | groups | both
+#       enable_new: true
+#       full: false                  # полная синхронизация (перезапись)
+#       purge: false                 # удалять отсутствующих пользователей
+#       dry_run: false
+#       # remove_vanished: "acl;properties"
+
+# ==============================================================================
+# FIREWALL  —  кластерный и узловой firewall, правила, алиасы, IP-сеты
+# ==============================================================================
+# firewall:
+#
+#   # ── Кластерный firewall (singleton) ──────────────────────────────────────
+#   cluster:
+#     enabled: true
+#     ebtables: false
+#     input_policy: DROP        # ACCEPT | DROP | REJECT
+#     output_policy: ACCEPT
+#     forward_policy: DROP
+#     # log_ratelimit:
+#     #   enabled: true
+#     #   rate: "1/second"
+#     #   burst: 5
+#
+#   # ── Security groups (cluster.firewall.security.GroupLegacy) ───────────────
+#   security_groups:
+#     - name: web-servers
+#       comment: "Web server firewall rules"
+#       rules:
+#         - type: in
+#           action: ACCEPT
+#           proto: tcp
+#           dport: "80,443"
+#           comment: "Allow HTTP/HTTPS"
+#         - type: in
+#           action: ACCEPT
+#           proto: tcp
+#           dport: "22"
+#           source: "+trusted-hosts"  # IP-set reference
+#           comment: "Allow SSH from trusted"
+#         - type: in
+#           action: DROP
+#           comment: "Drop everything else"
+#
+#   # ── Настройки firewall на уровне ноды (node.Firewall) ────────────────────
+#   node_firewalls:
+#     - node: pve1
+#       enabled: true
+#       nftables: false
+#       ndp: true               # Neighbor Discovery Protocol
+#       nosmurfs: true
+#       log_level_in: nolog     # emerg | alert | crit | err | warning | notice | info | debug | nolog
+#       log_level_out: nolog
+#       log_level_forward: nolog
+#       nf_conntrack_max: 262144
+#       nf_conntrack_tcp_timeout_established: 432000
+#
+#   # ── Алиасы IP-адресов (firewall.AliasLegacy) ─────────────────────────────
+#   aliases:
+#     - name: my-database
+#       cidr: 10.0.1.50
+#       comment: "Main database server"
+#     - name: backup-net
+#       cidr: 192.168.100.0/24
+#       comment: "Backup network"
+#       # node_name: pve1        # привязать к конкретной ноде
+#       # vm_id: 100             # или к конкретной VM
+#
+#   # ── IP-сеты (firewall.IpsetLegacy) ───────────────────────────────────────
+#   ipsets:
+#     - name: trusted-hosts
+#       comment: "Trusted management hosts"
+#       cidrs:
+#         - name: 10.10.0.0/24
+#           comment: "Office network"
+#         - name: 192.168.1.100
+#           comment: "Admin workstation"
+#         - name: 10.99.0.0/24
+#           nomatch: true        # исключить из набора
+#
+#   # ── Настройки firewall для VM/CT (firewall.OptionsLegacy) ────────────────
+#   options:
+#     - name: vm100-fw
+#       node_name: pve1
+#       vm_id: 100
+#       enabled: true
+#       dhcp: false
+#       ipfilter: true           # блокировать трафик с IP не из конфига VM
+#       macfilter: true
+#       ndp: true
+#       input_policy: DROP
+#       output_policy: ACCEPT
+#       log_level_in: nolog
+#       log_level_out: nolog
+#
+#   # ── Правила firewall для VM/CT (firewall.RulesLegacy) ────────────────────
+#   rules:
+#     - name: vm100-rules
+#       node_name: pve1
+#       vm_id: 100
+#       # container_id: 200      # для LXC-контейнера
+#       rules:
+#         - type: in
+#           action: ACCEPT
+#           proto: tcp
+#           dport: "22"
+#           source: "+trusted-hosts"
+#           comment: "SSH from trusted"
+#           enabled: true
+#         - type: in
+#           security_group: web-servers  # применить security group
+#         - type: out
+#           action: ACCEPT
+#           comment: "Allow all outbound"
 
 # ==============================================================================
 # POOLS  —  логические группы для организации VM
@@ -123,6 +446,255 @@ template:
 #         priority: 2
 
 # ==============================================================================
+# HA FENCING RULES  —  правила фенсинга (HaruleLegacy)
+# ==============================================================================
+# ha_rules:
+#   - name: fence-rule-1
+#     resource_id: "my-fence-rule"   # опционально; если не задан — Pulumi назначит
+#     affinity: required             # required | preferred
+#     comment: "GPU node fencing"
+#     disable: false
+#     nodes:
+#       pve1: 100                    # {node_name: priority}
+#       pve2: 50
+#     resources:                     # ресурсы, на которые распространяется правило
+#       - vm:100
+#       - ct:200
+#     rule: my-fence-rule-name
+#     strict: false
+#     type: qemu                     # lxc | qemu | service | storage
+
+# ==============================================================================
+# BACKUP JOBS  —  задания резервного копирования (backup.Job)
+# ==============================================================================
+# backups:
+#   - name: nightly-backup
+#     storage: backup-storage        # хранилище для бэкапов
+#     schedule: "0 2 * * *"         # cron или PVE-формат: "0 2 * * *" / "daily"
+#     all: true                      # бэкапить все VM/CT на ноде
+#     # vmids: ["100", "101", "200"] # или список конкретных VM/CT
+#     # pool: production             # только VM из этого пула
+#     # node: pve1                   # ограничить конкретной нодой
+#     enabled: true
+#     mode: snapshot                 # snapshot | suspend | stop
+#     compress: zstd                 # 0 | 1 | gzip | lzo | zstd
+#     mailnotification: failure      # always | failure
+#     # mailtos: [admin@example.com]
+#     # notes_template: "Backup {{guestname}}"
+#     # exclude_paths: [/tmp, /var/cache]
+#     # fleecing:
+#     #   enabled: true
+#     #   storage: fast-storage
+#     # performance:
+#     #   max_workers: 2
+#     #   pbs_entries_max: 0
+#     # prune_backups:               # политика хранения бэкапов
+#     #   keep-daily: "7"
+#     #   keep-weekly: "4"
+#     #   keep-monthly: "3"
+#     # protected: false
+#     # remove: true                 # удалять старые бэкапы согласно prune_backups
+#     # repeat_missed: false         # повторить пропущенное задание
+#     # stdexcludes: true            # исключать стандартные временные файлы
+#     # bwlimit: 0                   # KB/s, 0 = без ограничений
+#     # ionice: 7
+#     # lockwait: 180                # минут ожидания снятия блокировки
+#     # stopwait: 10                 # минут ожидания остановки VM
+#     # pigz: 0                      # потоков для pigz (0 = auto)
+#     # zstd: 1                      # уровень сжатия zstd
+#     # tmpdir: /var/tmp/proxmox
+#     # script: /usr/local/bin/backup-hook.sh
+
+# ==============================================================================
+# REPLICATION  —  репликация VM/CT между нодами (Replication)
+# ==============================================================================
+# replications:
+#   - name: vm100-to-pve2
+#     resource_id: "100-0"           # формат: <vmid>-<job_id>, например 100-0
+#     target: pve2                   # целевая нода
+#     schedule: "*/15 * * * *"      # каждые 15 минут
+#     comment: "Replicate VM 100 to pve2"
+#     disable: false
+#     rate: 10.5                     # MB/s, максимальная скорость репликации
+#     type: local                    # local (единственный поддерживаемый тип)
+
+# ==============================================================================
+# ACME  —  DNS-плагины, аккаунты, сертификаты (Let's Encrypt / ZeroSSL)
+# ==============================================================================
+# acme:
+#
+#   # ── DNS-плагины (для challenge DNS-01) ────────────────────────────────────
+#   dns_plugins:
+#     - name: cloudflare
+#       plugin: cloudflare          # lego plugin name
+#       api: dns                    # тип API
+#       disable: false
+#       validation_delay: 30        # секунды ожидания перед проверкой DNS
+#       data:
+#         CF_DNS_API_TOKEN: "{{ env.CF_TOKEN }}"
+#         # CF_ZONE_API_TOKEN: "..."
+#     - name: route53
+#       plugin: route53
+#       api: dns
+#       data:
+#         AWS_ACCESS_KEY_ID: "{{ env.AWS_KEY_ID }}"
+#         AWS_SECRET_ACCESS_KEY: "{{ env.AWS_SECRET }}"
+#         AWS_REGION: eu-central-1
+#
+#   # ── ACME-аккаунты ─────────────────────────────────────────────────────────
+#   accounts:
+#     - name: letsencrypt
+#       contact: mailto:admin@example.com
+#       # directory: https://acme-v02.api.letsencrypt.org/directory  # default LE
+#       # tos: https://letsencrypt.org/documents/LE-SA-v1.3-September-21-2022.pdf
+#       # Для ZeroSSL с External Account Binding:
+#       # directory: https://acme.zerossl.com/v2/DV90
+#       # eab_kid: "kid-xxxx"
+#       # eab_hmac_key: "hmac-xxxx"
+#
+#   # ── ACME-сертификаты для нод ──────────────────────────────────────────────
+#   certificates:
+#     - name: pve-main
+#       node_name: pve
+#       account: letsencrypt         # ссылка на acme.accounts[].name
+#       force: false
+#       legacy: false                # false → acme.Certificate (v8+), true → acme.CertificateLegacy
+#       domains:
+#         - domain: pve.example.com
+#           plugin: cloudflare       # DNS-01 через плагин cloudflare (omit = HTTP-01)
+#           # alias: _acme-challenge.example.com  # alias для DNS validation
+#         - domain: pve2.example.com
+#           plugin: cloudflare
+#
+#   # ── Пользовательские сертификаты для нод (CertificateLegacy) ─────────────
+#   # Используется для загрузки уже готового TLS-сертификата на ноду.
+#   # node_certificates:
+#   #   - name: pve-custom
+#   #     node_name: pve
+#   #     certificate: "{{ load_yaml('certs/pve.crt') }}"  # PEM
+#   #     certificate_chain: "{{ load_yaml('certs/chain.crt') }}"
+#   #     private_key: "{{ env.PVE_PRIVATE_KEY }}"
+#   #     overwrite: true
+
+# ==============================================================================
+# CLUSTER MISC  —  опции кластера, HW-маппинги, метрики, OCI, APT, pool membership
+# ==============================================================================
+# cluster_misc:
+#
+#   # ── Глобальные опции кластера (singleton) ─────────────────────────────────
+#   options:
+#     description: "My Proxmox Cluster"
+#     email_from: admin@example.com
+#     keyboard: en-us
+#     language: en
+#     mac_prefix: "BC:24:11"
+#     max_workers: 5
+#     http_proxy: "http://proxy.example.com:3128"
+#     console: html5              # applet | html5 | vv | xtermjs
+#     migration_type: secure      # secure | unsecure
+#     migration_cidr: 10.0.0.0/8
+#     ha_shutdown_policy: conditional  # freeze | failover | conditional | migrate
+#     crs_ha: static              # static | basic
+#     crs_ha_rebalance_on_start: false
+#     bandwidth_limit_default: 0  # 0 = unlimited (KiB/s)
+#     bandwidth_limit_clone: 0
+#     bandwidth_limit_migration: 0
+#     bandwidth_limit_move: 0
+#     bandwidth_limit_restore: 0
+#     next_id:
+#       lower: 100
+#       upper: 999999999
+#     notify:
+#       ha_fencing_mode: always   # always | never
+#       ha_fencing_target: ""
+#       package_updates: auto     # auto | always | never
+#       package_updates_target: ""
+#       replication: always       # always | never
+#       replication_target: ""
+#
+#   # ── Маппинги PCI-устройств ────────────────────────────────────────────────
+#   hw_mapping_pci:
+#     - name: gpu-nvidia
+#       comment: "NVIDIA RTX 3090 passthrough"
+#       mediated_devices: false
+#       legacy: false             # false → Pci (v8+), true → PciLegacy
+#       maps:
+#         - id: "0000:01:00.0"   # PCI device ID на узле
+#           node: pve
+#           path: "0000:01:00.0"
+#           comment: "Primary GPU"
+#           iommu_group: 1
+#           subsystem_id: "10de:1e04"
+#
+#   # ── Маппинги USB-устройств ────────────────────────────────────────────────
+#   hw_mapping_usb:
+#     - name: yubi-key
+#       comment: "YubiKey security token"
+#       legacy: false             # false → Usb (v8+), true → UsbLegacy
+#       maps:
+#         - id: "1050:0407"      # vendor:product (USB device ID)
+#           node: pve
+#           comment: "YubiKey 5"
+#           # path: "1-1.2"      # опционально — порт (вместо ID-based mapping)
+#
+#   # ── Серверы метрик ────────────────────────────────────────────────────────
+#   metrics_servers:
+#     - name: influxdb-main
+#       type: influxdb            # graphite | influxdb | opentelemetry
+#       server: influxdb.example.com
+#       port: 8086
+#       disable: false
+#       mtu: 1500
+#       timeout: 1
+#       # influxdb-специфичные параметры:
+#       influx_bucket: proxmox
+#       influx_organization: myorg
+#       influx_token: "mytoken123"
+#       influx_db_proto: https    # https | http
+#       influx_verify: true
+#       influx_max_body_size: 25000000
+#       influx_api_path_prefix: ""
+#     - name: graphite-main
+#       type: graphite
+#       server: graphite.example.com
+#       port: 2003
+#       graphite_path: proxmox
+#       graphite_proto: tcp       # udp | tcp
+#
+#   # ── OCI-образы (rootfs контейнеров) ──────────────────────────────────────
+#   oci_images:
+#     - name: alpine-latest
+#       node_name: pve
+#       datastore_id: local
+#       reference: docker.io/library/alpine:latest
+#       # file_name: alpine-latest.tar.zst
+#       overwrite: true
+#       overwrite_unmanaged: false
+#       # upload_timeout: 600
+#
+#   # ── APT-репозитории на нодах ──────────────────────────────────────────────
+#   apt_repositories:
+#     - name: pve-no-subscription
+#       node: pve
+#       file_path: /etc/apt/sources.list.d/pve-install-repo.list
+#       index: 0               # 0-based индекс записи в файле
+#       enabled: true
+#     - name: ceph-no-subscription
+#       node: pve
+#       file_path: /etc/apt/sources.list.d/ceph.list
+#       index: 0
+#       enabled: false
+#
+#   # ── Членство в пулах ──────────────────────────────────────────────────────
+#   pool_memberships:
+#     - name: web01-in-webservers
+#       pool_id: webservers
+#       vm_id: 101
+#     - name: storage-nfs-in-webservers
+#       pool_id: webservers
+#       storage_id: nfs-iso
+
+# ==============================================================================
 # SDN  —  Software Defined Networking (опционально)
 # ==============================================================================
 {% if env.get('ENABLE_SDN') == 'true' %}
@@ -145,158 +717,248 @@ sdn:
       vnet: myvnet
       gateway: 10.100.0.1
       # snat: false
+
+  # ── SDN Applier — применяет конфигурацию SDN после изменений (EXPERIMENTAL)
+  # applier:
+  #   on_create: true    # применить при создании (default: true)
+  #   on_destroy: true   # применить при удалении (default: true)
+  #   legacy: false      # true → ApplierLegacy (deprecated)
+
+  # ── SDN Fabrics — автоматическая маршрутизация между узлами кластера ──────
+  # fabric_openfabric:
+  #   - name: fabric1              # resource_id
+  #     ip_prefix: 10.200.0.0/24  # IPv4 prefix для fabric
+  #     ip6_prefix: fd00::/64     # IPv6 prefix (опционально)
+  #     csnp_interval: 10         # интервал CSNP (опционально)
+  #     hello_interval: 1         # интервал hello (опционально)
+  #     legacy: false
+  #
+  # fabric_ospf:
+  #   - name: ospf1                # resource_id
+  #     area: 0.0.0.0              # OSPF area (IPv4 или 32-bit число)
+  #     ip_prefix: 10.201.0.0/24  # IPv4 prefix для fabric
+  #     legacy: false
+
+  # ── SDN Fabric Nodes — узлы привязанные к fabric ─────────────────────────
+  # fabric_node_openfabric:
+  #   - fabric_id: fabric1         # ссылка на fabric_openfabric[].name
+  #     node_id: pve1              # имя узла Proxmox
+  #     interface_names: [eth1]    # сетевые интерфейсы узла
+  #     ip: 10.200.0.1             # IPv4 адрес узла (опционально)
+  #     ip6: fd00::1               # IPv6 адрес узла (опционально)
+  #     legacy: false
+  #   - fabric_id: fabric1
+  #     node_id: pve2
+  #     interface_names: [eth1]
+  #     ip: 10.200.0.2
+  #
+  # fabric_node_ospf:
+  #   - fabric_id: ospf1           # ссылка на fabric_ospf[].name
+  #     node_id: pve1
+  #     interface_names: [eth1]
+  #     ip: 10.201.0.1             # IPv4 адрес узла (обязательно для OSPF)
+  #     legacy: false
 {% endif %}
 
 # ==============================================================================
-# DEFAULTS  —  параметры по умолчанию для всех VM
+# DEFAULTS  —  параметры по умолчанию, сгруппированные по типу ресурса
 # ==============================================================================
-# Параметры VM наследуются из defaults, переопределяются на уровне VM.
-
 defaults:
-  node: {{ proxmox_node }}
-  bios: seabios              # seabios | ovmf (UEFI)
 
-  # ── CPU ────────────────────────────────────────────────────────────────
-  cpu:
-    cores: 2
-    type: host               # host | kvm64 | penryn | nehalem | ...
-    # sockets: 1
-    # numa: true
-    # affinity: "0-3"        # привязка к ядрам хоста
-    # flags: "aes=require;avx=require"
-    # hotplugged: 1          # CPU hotplug
-    # limit: 100             # макс. % одного ядра
-    # units: 1024
+  # ── VM defaults ──────────────────────────────────────────────────────────
+  vm:
+    node: {{ proxmox_node }}
+    bios: seabios              # seabios | ovmf (UEFI)
 
-  # ── Memory ─────────────────────────────────────────────────────────────
-  memory:
-    dedicated: 2048          # MB
-    # floating: 1024         # плавающая память
-    # hugepages: true        # huge pages (требует настройки хоста)
-    # keep_hugepages: true
-    # shared: 512
+    # ── CPU ──────────────────────────────────────────────────────────────
+    cpu:
+      cores: 2
+      type: host               # host | kvm64 | penryn | nehalem | ...
+      # sockets: 1
+      # numa: true
+      # affinity: "0-3"        # привязка к ядрам хоста
+      # flags: "aes=require;avx=require"
+      # hotplugged: 1          # CPU hotplug
+      # limit: 100             # макс. % одного ядра
+      # units: 1024
 
-  # ── Disks ──────────────────────────────────────────────────────────────
-  disks:
-    - size: 32               # GB
-      datastore: local-zfs
-      # aio: native          # native | writeback | writethrough
-      # backup: true
-      # cache: writeback     # none | directsync | writethrough | writeback | unsafe
-      # discard: "on"
-      # file_format: raw     # qcow2 | raw
-      # file_id: "local:iso/disk.img"    # импорт существующего образа
-      # import_from: "local:iso/disk.img"
-      # iothread: true
-      # replicate: false
-      # serial: "my-disk-001"
-      # speed: 500           # MB/s
-      # ssd: true
+    # ── Memory ───────────────────────────────────────────────────────────
+    memory:
+      dedicated: 2048          # MB
+      # floating: 1024         # плавающая память
+      # hugepages: true        # huge pages (требует настройки хоста)
+      # keep_hugepages: true
+      # shared: 512
 
-  # ── Network ────────────────────────────────────────────────────────────
-  # networks: []             # сети задаются на уровне каждой VM
+    # ── Disks ────────────────────────────────────────────────────────────
+    disks:
+      - size: 32               # GB
+        datastore: local-zfs
+        # aio: native          # native | writeback | writethrough
+        # backup: true
+        # cache: writeback     # none | directsync | writethrough | writeback | unsafe
+        # discard: "on"
+        # file_format: raw     # qcow2 | raw
+        # file_id: "local:iso/disk.img"    # импорт существующего образа
+        # import_from: "local:iso/disk.img"
+        # iothread: true
+        # replicate: false
+        # serial: "my-disk-001"
+        # speed: 500           # MB/s
+        # ssd: true
 
-  # ── Agent ──────────────────────────────────────────────────────────────
-  agent:
-    enabled: true
-    trim: true
-    type: virtio
-    # timeout: 30
-    # wait_for_ip: true
+    # ── Agent ────────────────────────────────────────────────────────────
+    agent:
+      enabled: true
+      trim: true
+      type: virtio
+      # timeout: 30
+      # wait_for_ip: true
 
-  # ── Boot ───────────────────────────────────────────────────────────────
-  # boot_orders: ["scsi0", "net0"]
-  # on_boot: true            # запускать при старте Proxmox
-  # started: true            # запустить сразу после создания
-  # stop_on_destroy: true
+    # ── Boot ─────────────────────────────────────────────────────────────
+    # boot_orders: ["scsi0", "net0"]
+    # on_boot: true            # запускать при старте Proxmox
+    # started: true            # запустить сразу после создания
+    # stop_on_destroy: true
 
-  # ── OVMF / EFI (только если bios: ovmf) ───────────────────────────────
-  # efi_disk:
-  #   datastore_id: local-zfs
-  #   file_format: raw
-  #   type: "4m"
-  #   pre_enrolled_keys: false
+    # ── OVMF / EFI (только если bios: ovmf) ──────────────────────────────
+    # efi_disk:
+    #   datastore_id: local-zfs
+    #   file_format: raw
+    #   type: "4m"
+    #   pre_enrolled_keys: false
 
-  # ── Startup order ──────────────────────────────────────────────────────
-  # startup:
-  #   order: 1
-  #   up_delay: 30
-  #   down_delay: 30
+    # ── CD-ROM ───────────────────────────────────────────────────────────
+    # cdrom:
+    #   interface: ide2
+    #   file_id: "local:iso/some.iso"
 
-  # ── Advanced ───────────────────────────────────────────────────────────
-  # acpi: true
-  # hotplug: "disk,network,cpu"
-  # keyboard_layout: "en-us"
-  # kvm_arguments: "-object rng-random,id=rng0,filename=/dev/urandom"
-  # machine: "q35"
-  # pool_id: "production"
-  # protection: false
-  # scsi_hardware: "virtio-scsi-pci"
-  # tablet_device: true
-  # tags: ["pulumi", "production"]
+    # ── Startup order ─────────────────────────────────────────────────────
+    # startup:
+    #   order: 1
+    #   up_delay: 30
+    #   down_delay: 30
 
-  # ── VGA ────────────────────────────────────────────────────────────────
-  # vga:
-  #   type: std              # std | vmware | qxl | serial0
-  #   memory: 16             # MB
-  #   clipboard: vnc
+    # ── Advanced ──────────────────────────────────────────────────────────
+    # acpi: true
+    # hotplug: "disk,network,cpu"
+    # keyboard_layout: "en-us"
+    # kvm_arguments: "-object rng-random,id=rng0,filename=/dev/urandom"
+    # machine: "q35"
+    # pool_id: "production"
+    # protection: false
+    # scsi_hardware: "virtio-scsi-pci"
+    # tablet_device: true
+    # tags: ["pulumi", "production"]
 
-  # ── Watchdog ───────────────────────────────────────────────────────────
-  # watchdog:
-  #   model: i6300esb        # i6300esb | ib700
-  #   action: reset          # reset | poweroff | pause | debug
-  #   enabled: true
+    # ── VGA ───────────────────────────────────────────────────────────────
+    # vga:
+    #   type: std              # std | vmware | qxl | serial0
+    #   memory: 16             # MB
+    #   clipboard: vnc
 
-  # ── TPM ────────────────────────────────────────────────────────────────
-  # tpm_state:
-  #   version: "2.0"
-  #   datastore_id: local
+    # ── Watchdog ──────────────────────────────────────────────────────────
+    # watchdog:
+    #   model: i6300esb        # i6300esb | ib700
+    #   action: reset          # reset | poweroff | pause | debug
+    #   enabled: true
 
-  # ── SMBIOS ─────────────────────────────────────────────────────────────
-  # smbios:
-  #   manufacturer: "My Company"
-  #   product: "VM"
-  #   serial: "VM-001"
-  #   uuid: "550e8400-e29b-41d4-a716-446655440000"
+    # ── TPM ───────────────────────────────────────────────────────────────
+    # tpm_state:
+    #   version: "2.0"
+    #   datastore_id: local
 
-  # ── PCI passthrough ────────────────────────────────────────────────────
-  # hostpcis:
-  #   - device: "0000:01:00.0"
-  #     pcie: true
-  #     rombar: true
-  #     xvga: false
+    # ── SMBIOS ────────────────────────────────────────────────────────────
+    # smbios:
+    #   manufacturer: "My Company"
+    #   product: "VM"
+    #   serial: "VM-001"
+    #   uuid: "550e8400-e29b-41d4-a716-446655440000"
 
-  # ── USB passthrough ────────────────────────────────────────────────────
-  # usbs:
-  #   - host: "5:1"          # Bus:Port или VendorID:ProductID
-  #     usb3: false
+    # ── PCI passthrough ───────────────────────────────────────────────────
+    # hostpcis:
+    #   - device: "0000:01:00.0"
+    #     pcie: true
+    #     rombar: true
+    #     xvga: false
 
-  # ── NUMA ───────────────────────────────────────────────────────────────
-  # numas:
-  #   - cpus: "0-3"
-  #     memory: 4096
-  #     hostnodes: "0-1"
-  #     policy: bind         # bind | preferred | interleave
+    # ── USB passthrough ───────────────────────────────────────────────────
+    # usbs:
+    #   - host: "5:1"          # Bus:Port или VendorID:ProductID
+    #     usb3: false
 
-  # ── Таймауты (секунды) ─────────────────────────────────────────────────
-  # timeout_create: 300
-  # timeout_clone: 300
-  # timeout_start_vm: 300
-  # timeout_stop_vm: 300
-  # timeout_reboot: 300
-  # timeout_migrate: 300
-  # timeout_move_disk: 300
-  # timeout_shutdown_vm: 300
+    # ── NUMA ──────────────────────────────────────────────────────────────
+    # numas:
+    #   - cpus: "0-3"
+    #     memory: 4096
+    #     hostnodes: "0-1"
+    #     policy: bind         # bind | preferred | interleave
+
+    # ── Таймауты (секунды) ────────────────────────────────────────────────
+    # timeout_create: 300
+    # timeout_clone: 300
+    # timeout_start_vm: 300
+    # timeout_stop_vm: 300
+    # timeout_reboot: 300
+    # timeout_migrate: 300
+    # timeout_move_disk: 300
+    # timeout_shutdown_vm: 300
+
+  # ── LXC defaults ─────────────────────────────────────────────────────────
+  # lxc:
+  #   node: {{ proxmox_node }}
+  #   unprivileged: true
+  #   start_on_boot: false
+  #
+  #   cpu:
+  #     cores: 1
+  #     # architecture: amd64
+  #     # units: 1024
+  #
+  #   memory:
+  #     dedicated: 512         # MB
+  #     swap: 0                # MB
+  #
+  #   disk:
+  #     size: 4                # GB
+  #     datastore: local-zfs
+  #     # acl: false
+  #     # quota: false
+  #     # replicate: false
+  #
+  #   # tags: ["pulumi", "lxc"]
+  #   # pool_id: production
+  #
+  #   # features:
+  #   #   nesting: true        # для Docker внутри LXC
+  #   #   fuse: false
+  #   #   keyctl: false
+  #   #   mounts: []           # ["cifs", "nfs"]
+  #
+  #   # startup:
+  #   #   order: 1
+  #   #   up_delay: 10
+  #   #   down_delay: 10
+  #
+  #   # Таймауты (секунды)
+  #   # timeout_create: 1800
+  #   # timeout_clone: 1800
+  #   # timeout_start: 60
+  #   # timeout_update: 1800
+  #   # timeout_delete: 60
 
 # ==============================================================================
-# VMS  —  список VM (клонируются из template)
+# VMS  —  список VM
 # ==============================================================================
+# Шаблонные VM (template: true) создаются первыми.
+# VM с clone.vm_id, указывающим на шаблон из этого же инвентаря,
+# автоматически получают depends_on.
+
 vms:
   - name: web01
     vmid: 101
     networks:
-      - zone: internal
-        host: 10              # IP = cidr_base + host (например 10.0.0.10)
+      - bridge: vmbr0
         # vlan_id: 100
         # firewall: true
         # rate_limit: 1000000000   # бит/сек (1 Gbps)
@@ -304,12 +966,25 @@ vms:
         # mac_address: "52:54:00:12:34:56"
         # queues: 1
         # disconnected: false
+    clone:
+      vm_id: 9000             # VMID шаблона (должен существовать в Proxmox)
+      # datastore_id: local-zfs
+      # full: true
+    # initialization:          # cloud-init
+    #   ip_configs:
+    #     - ipv4:
+    #         address: 10.0.0.10/24
+    #         gateway: 10.0.0.1
+    #   dns:
+    #     servers: [1.1.1.1, 8.8.8.8]
+    #     domain: example.lan
 
   - name: db01
     vmid: 110
     networks:
-      - zone: internal
-        host: 50
+      - bridge: vmbr0
+    clone:
+      vm_id: 9000
     cpu:
       cores: 4
       type: host
@@ -330,9 +1005,58 @@ vms:
     #   state: started       # started | stopped | disabled
     #   max_restart: 2
     #   max_relocate: 1
-    # clone:
-    #   datastore_id: local-zfs
-    #   full: true
-    # initialization:        # cloud-init переопределение (обычно задаётся автоматически)
+    # initialization:        # cloud-init переопределение
     #   type: nocloud
     #   datastore_id: local
+
+# ==============================================================================
+# CONTAINERS  —  LXC-контейнеры
+# ==============================================================================
+# Требует наличия defaults.lxc.
+# Сетевые интерфейсы именуются eth0, eth1, ... (auto) или задаются явно (name:).
+
+# containers:
+#   - name: proxy01
+#     vmid: 201
+#     networks:
+#       - bridge: vmbr0
+#         # name: eth0       # авто, если не задан
+#         # firewall: true
+#         # rate_limit: 10.0 # MB/s (в отличие от VM — мегабайты/с)
+#         # vlan_id: 100
+#         # mac_address: "52:54:00:ab:cd:ef"
+#     # initialization:
+#     #   hostname: proxy01.example.lan   # по умолчанию — spec.name
+#     #   ip_configs:
+#     #     - ipv4:
+#     #         address: 10.0.0.20/24
+#     #         gateway: 10.0.0.1
+#     #   dns:
+#     #     servers: [1.1.1.1, 8.8.8.8]
+#     #     domain: example.lan
+#     operating_system:
+#       template_file_id: "local:vztmpl/ubuntu-24.04-standard_24.04-2_amd64.tar.zst"
+#       type: ubuntu         # ubuntu | debian | alpine | centos | fedora | ...
+#     # clone:
+#     #   vm_id: 9100        # VMID контейнера-источника
+#     #   datastore_id: local-zfs
+#     # cpu:
+#     #   cores: 2
+#     # memory:
+#     #   dedicated: 1024
+#     #   swap: 256
+#     # disk:
+#     #   size: 10
+#     #   datastore: local-zfs
+#     # mount_points:
+#     #   - path: /data
+#     #     volume: local-zfs:subvol-201-disk-1
+#     #     size: "50G"
+#     #     backup: true
+#     # features:
+#     #   nesting: true
+#     # unprivileged: true
+#     # start_on_boot: true
+#     # pool_id: production
+#     # protection: false
+#     # tags: ["pulumi", "lxc"]

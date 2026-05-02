@@ -1,7 +1,7 @@
 import pulumi
 import pulumi_proxmoxve as proxmox
 
-from models import HaGroupSpec, MergedVMSpec
+from models import HaGroupSpec, HaRuleSpec, VMSpec
 
 
 def build_ha_group(
@@ -31,7 +31,7 @@ def build_ha_group(
 
 
 def build_ha_resource(
-    vm_spec: MergedVMSpec,
+    vm_spec: VMSpec,
     vm: proxmox.VmLegacy,
     provider: proxmox.Provider,
 ) -> proxmox.HaresourceLegacy:
@@ -53,4 +53,35 @@ def build_ha_resource(
         f"ha-resource-{vm_spec.name}",
         **args,
         opts=pulumi.ResourceOptions(provider=provider, depends_on=[vm]),
+    )
+
+
+def build_ha_rule(
+    spec: HaRuleSpec,
+    provider: proxmox.Provider,
+) -> proxmox.HaruleLegacy:
+    args: dict = {}
+    if spec.resource_id is not None:
+        args["resource_id"] = spec.resource_id
+    if spec.affinity is not None:
+        args["affinity"] = spec.affinity
+    if spec.comment is not None:
+        args["comment"] = spec.comment
+    if spec.disable is not None:
+        args["disable"] = spec.disable
+    if spec.nodes is not None:
+        args["nodes"] = spec.nodes
+    if spec.resources is not None:
+        args["resources"] = spec.resources
+    if spec.rule is not None:
+        args["rule"] = spec.rule
+    if spec.strict is not None:
+        args["strict"] = spec.strict
+    if spec.type is not None:
+        args["type"] = spec.type
+
+    return proxmox.HaruleLegacy(
+        f"ha-rule-{spec.name}",
+        **args,
+        opts=pulumi.ResourceOptions(provider=provider),
     )

@@ -1,7 +1,16 @@
 import pulumi
 import pulumi_proxmoxve as proxmox
 
-from models import SdnZoneSpec, SdnVnetSpec, SdnSubnetSpec
+from models import (
+    SdnZoneSpec,
+    SdnVnetSpec,
+    SdnSubnetSpec,
+    SdnApplierSpec,
+    SdnFabricOpenfabricSpec,
+    SdnFabricOspfSpec,
+    SdnFabricNodeOpenfabricSpec,
+    SdnFabricNodeOspfSpec,
+)
 
 _ZONE_CLASSES = {
     "simple": proxmox.sdn.zone.Simple,
@@ -72,4 +81,101 @@ def build_sdn_subnet(
         f"sdn-subnet-{spec.cidr.replace('/', '-')}",
         **args,
         opts=pulumi.ResourceOptions(provider=provider, depends_on=[vnet]),
+    )
+
+
+def build_sdn_applier(
+    spec: SdnApplierSpec,
+    provider: proxmox.Provider,
+) -> pulumi.CustomResource:
+    args: dict = {}
+    if spec.on_create is not None:
+        args["on_create"] = spec.on_create
+    if spec.on_destroy is not None:
+        args["on_destroy"] = spec.on_destroy
+
+    cls = proxmox.sdn.ApplierLegacy if spec.legacy else proxmox.sdn.Applier
+    return cls("sdn-applier", **args, opts=pulumi.ResourceOptions(provider=provider))
+
+
+def build_sdn_fabric_openfabric(
+    spec: SdnFabricOpenfabricSpec,
+    provider: proxmox.Provider,
+) -> pulumi.CustomResource:
+    args: dict = {"resource_id": spec.name}
+    if spec.csnp_interval is not None:
+        args["csnp_interval"] = spec.csnp_interval
+    if spec.hello_interval is not None:
+        args["hello_interval"] = spec.hello_interval
+    if spec.ip6_prefix is not None:
+        args["ip6_prefix"] = spec.ip6_prefix
+    if spec.ip_prefix is not None:
+        args["ip_prefix"] = spec.ip_prefix
+
+    cls = proxmox.sdn.fabric.OpenfabricLegacy if spec.legacy else proxmox.sdn.fabric.Openfabric
+    return cls(
+        f"sdn-fabric-openfabric-{spec.name}",
+        **args,
+        opts=pulumi.ResourceOptions(provider=provider),
+    )
+
+
+def build_sdn_fabric_ospf(
+    spec: SdnFabricOspfSpec,
+    provider: proxmox.Provider,
+) -> pulumi.CustomResource:
+    args: dict = {
+        "resource_id": spec.name,
+        "area": spec.area,
+        "ip_prefix": spec.ip_prefix,
+    }
+
+    cls = proxmox.sdn.fabric.OspfLegacy if spec.legacy else proxmox.sdn.fabric.Ospf
+    return cls(
+        f"sdn-fabric-ospf-{spec.name}",
+        **args,
+        opts=pulumi.ResourceOptions(provider=provider),
+    )
+
+
+def build_sdn_fabric_node_openfabric(
+    spec: SdnFabricNodeOpenfabricSpec,
+    fabric: pulumi.CustomResource,
+    provider: proxmox.Provider,
+) -> pulumi.CustomResource:
+    args: dict = {
+        "fabric_id": spec.fabric_id,
+        "node_id": spec.node_id,
+        "interface_names": spec.interface_names,
+    }
+    if spec.ip is not None:
+        args["ip"] = spec.ip
+    if spec.ip6 is not None:
+        args["ip6"] = spec.ip6
+
+    cls = proxmox.sdn.fabric.node.OpenfabricLegacy if spec.legacy else proxmox.sdn.fabric.node.Openfabric
+    return cls(
+        f"sdn-fabric-node-openfabric-{spec.fabric_id}-{spec.node_id}",
+        **args,
+        opts=pulumi.ResourceOptions(provider=provider, depends_on=[fabric]),
+    )
+
+
+def build_sdn_fabric_node_ospf(
+    spec: SdnFabricNodeOspfSpec,
+    fabric: pulumi.CustomResource,
+    provider: proxmox.Provider,
+) -> pulumi.CustomResource:
+    args: dict = {
+        "fabric_id": spec.fabric_id,
+        "node_id": spec.node_id,
+        "interface_names": spec.interface_names,
+        "ip": spec.ip,
+    }
+
+    cls = proxmox.sdn.fabric.node.OspfLegacy if spec.legacy else proxmox.sdn.fabric.node.Ospf
+    return cls(
+        f"sdn-fabric-node-ospf-{spec.fabric_id}-{spec.node_id}",
+        **args,
+        opts=pulumi.ResourceOptions(provider=provider, depends_on=[fabric]),
     )
