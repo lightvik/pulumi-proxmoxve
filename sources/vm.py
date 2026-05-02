@@ -8,7 +8,6 @@ def build_vm(
     spec: VMSpec,
     provider: proxmox.Provider,
     depends_on: list | None = None,
-    cloud_init_file_id: pulumi.Input[str] | None = None,
 ) -> proxmox.VmLegacy:
     network_devices = [
         proxmox.VmLegacyNetworkDeviceArgs(
@@ -78,8 +77,6 @@ def build_vm(
                 )
                 for c in spec.initialization.ip_configs
             ]
-        if cloud_init_file_id:
-            initialization_args["user_data_file_id"] = cloud_init_file_id
         if spec.initialization.user_data_file_id:
             initialization_args["user_data_file_id"] = spec.initialization.user_data_file_id
         if spec.initialization.vendor_data_file_id:
@@ -88,8 +85,6 @@ def build_vm(
             initialization_args["meta_data_file_id"] = spec.initialization.meta_data_file_id
         if spec.initialization.network_data_file_id:
             initialization_args["network_data_file_id"] = spec.initialization.network_data_file_id
-    elif cloud_init_file_id:
-        initialization_args["user_data_file_id"] = cloud_init_file_id
 
     initialization = proxmox.VmLegacyInitializationArgs(**initialization_args)
 

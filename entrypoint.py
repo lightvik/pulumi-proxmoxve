@@ -92,22 +92,13 @@ def get_output(name: str) -> str | None:
 
 
 def show_outputs():
-    ssh_key = get_output('ssh_private_key')
     vm_ips = get_output('vm_ips')
 
-    if not ssh_key and not vm_ips:
+    if not vm_ips:
         return
 
     console.print()
     console.rule('[bold green]Outputs')
-
-    if ssh_key:
-        console.print(Panel(
-            Text(ssh_key, style='green dim'),
-            title='[bold]SSH Private Key[/bold]',
-            border_style='green',
-            padding=(1, 2),
-        ))
 
     if vm_ips:
         try:

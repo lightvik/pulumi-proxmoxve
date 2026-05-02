@@ -4,8 +4,6 @@ import pulumi
 import pulumi_proxmoxve as proxmox
 
 from loader import load_inventory
-from ssh_key import build_ssh_key
-from cloud_init import build_cloud_init_file
 from vm import build_vm
 from lxc import build_container
 from pool import build_pool
@@ -126,19 +124,6 @@ if inv.sdn:
     if inv.sdn.applier:
         build_sdn_applier(inv.sdn.applier, provider)
 
-# ── SSH key + cloud-init ─────────────────────────────────────────────────────
-ssh_key = None
-cloud_init = None
-if inv.vms:
-    ssh_key = build_ssh_key()
-    first_vm = inv.vms[0]
-    cloud_init = build_cloud_init_file(
-        node=first_vm.node,
-        datastore=first_vm.disks[0].datastore if first_vm.disks else "local",
-        provider=provider,
-        public_key=ssh_key.public_key_openssh,
-    )
-
 # ── VMs ──────────────────────────────────────────────────────────────────────
 # Two-pass: templates first so clones can declare depends_on.
 vm_resources: dict[str, proxmox.VmLegacy] = {}
@@ -150,7 +135,6 @@ for spec in inv.vms:
             spec=spec,
             provider=provider,
             depends_on=download_resources or None,
-            cloud_init_file_id=cloud_init.id if cloud_init else None,
         )
         vm_resources[spec.name] = vm
         template_by_vmid[spec.vmid] = vm
@@ -165,7 +149,6 @@ for spec in inv.vms:
         spec=spec,
         provider=provider,
         depends_on=deps or None,
-        cloud_init_file_id=cloud_init.id if cloud_init else None,
     )
     vm_resources[spec.name] = vm
 
@@ -183,9 +166,6 @@ for spec in inv.containers:
     container_resources[spec.name] = ct
 
 # ── Outputs ──────────────────────────────────────────────────────────────────
-if ssh_key:
-    pulumi.export("ssh_private_key", pulumi.Output.secret(ssh_key.private_key_openssh))
-    pulumi.export("ssh_public_key", ssh_key.public_key_openssh)
 template_vm_names = {s.name for s in inv.vms if s.template}
 pulumi.export(
     "vm_ips",
