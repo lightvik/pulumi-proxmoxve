@@ -51,7 +51,9 @@ def build_vm(
                 iops_read_burstable=d.speed.iops_read_burstable,
                 iops_write=d.speed.iops_write,
                 iops_write_burstable=d.speed.iops_write_burstable,
-            ) if d.speed else None,
+            )
+            if d.speed
+            else None,
             ssd=d.ssd,
         )
         for i, d in enumerate(spec.disks)

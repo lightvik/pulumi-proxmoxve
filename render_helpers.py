@@ -372,7 +372,9 @@ def from_yaml(text):
 
 def to_yaml(obj, indent=2):
     """Serialize a Python object to a YAML string (trailing newline stripped)."""
-    return yaml.dump(obj, allow_unicode=True, default_flow_style=False, indent=indent).rstrip()
+    return yaml.dump(
+        obj, allow_unicode=True, default_flow_style=False, indent=indent
+    ).rstrip()
 
 
 # ── Реестр Jinja2-глобалов ────────────────────────────────────────────────────
