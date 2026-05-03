@@ -48,10 +48,11 @@ def build_vm(
         for i, d in enumerate(spec.disks)
     ]
 
-    initialization_args = {
-        "datastore_id": spec.disks[0].datastore if spec.disks else "local",
-    }
-    if spec.initialization:
+    initialization = None
+    if spec.initialization is not None:
+        initialization_args: dict = {
+            "datastore_id": spec.disks[0].datastore if spec.disks else "local",
+        }
         if spec.initialization.type:
             initialization_args["type"] = spec.initialization.type
         if spec.initialization.interface:
@@ -97,8 +98,7 @@ def build_vm(
             initialization_args["network_data_file_id"] = (
                 spec.initialization.network_data_file_id
             )
-
-    initialization = proxmox.VmLegacyInitializationArgs(**initialization_args)
+        initialization = proxmox.VmLegacyInitializationArgs(**initialization_args)
 
     opts = pulumi.ResourceOptions(
         provider=provider,
@@ -140,9 +140,11 @@ def build_vm(
         ),
         "network_devices": network_devices,
         "disks": disks,
-        "initialization": initialization,
         "opts": opts,
     }
+
+    if initialization is not None:
+        vm_args["initialization"] = initialization
 
     if spec.clone:
         vm_args["clone"] = proxmox.VmLegacyCloneArgs(
