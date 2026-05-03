@@ -32,6 +32,10 @@ def build_sdn_zone(
         )
 
     args: dict = {"resource_id": spec.name}
+    if spec.comment is not None:
+        args["comment"] = spec.comment
+    if spec.bridge is not None:
+        args["bridge"] = spec.bridge
     if spec.mtu is not None:
         args["mtu"] = spec.mtu
     if spec.nodes:
@@ -53,6 +57,8 @@ def build_sdn_vnet(
         "resource_id": spec.name,
         "zone": spec.zone,
     }
+    if spec.comment is not None:
+        args["comment"] = spec.comment
     if spec.tag is not None:
         args["tag"] = spec.tag
     if spec.vlan_aware is not None:
