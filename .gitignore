@@ -14,3 +14,6 @@ Pulumi.*.yaml.bak
 __pycache__/
 *.pyc
 *.pyo
+
+# environment
+.env

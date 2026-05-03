@@ -139,7 +139,7 @@ for spec in inv.vms:
         vm = build_vm(
             spec=spec,
             provider=provider,
-            depends_on=download_resources or None,
+            depends_on=(download_resources + upload_resources) or None,
         )
         vm_resources[spec.name] = vm
         template_by_vmid[spec.vmid] = vm
@@ -147,9 +147,9 @@ for spec in inv.vms:
 for spec in inv.vms:
     if spec.template:
         continue
-    deps = []
+    deps: list = upload_resources[:]
     if spec.clone and spec.clone.vm_id in template_by_vmid:
-        deps = [template_by_vmid[spec.clone.vm_id]]
+        deps.append(template_by_vmid[spec.clone.vm_id])
     vm = build_vm(
         spec=spec,
         provider=provider,

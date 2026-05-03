@@ -50,11 +50,9 @@
 # PROVIDER
 # ==============================================================================
 provider:
-  endpoint: {{ env.PROXMOX_ENDPOINT }}
+  endpoint: {{ env.PROXMOX_ENDPOINT }} # Формат:  https://<host-or-ip>:8006
   insecure: true
-  api_token: {{ env.PROXMOX_TOKEN }}
-  # Формат токена: user@realm!token-id=token-secret
-  # Пример:        root@pam!pulumi=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+  api_token: {{ env.PROXMOX_TOKEN }}   # Формат токена: user@realm!token-id=token-secret
 
 # ==============================================================================
 # NETWORK BRIDGES  —  Linux-бриджи на узлах Proxmox (опционально)
@@ -211,14 +209,59 @@ provider:
 # Pulumi передаёт файл через API. Для больших ISO используйте downloads: —
 # там Proxmox скачивает сам по URL без участия клиентской машины.
 #
+# content_type: допустимые значения:
+#   iso      — ISO-образы (.iso, .img). НЕ подходит для импорта дисков VM.
+#   import   — Образы дисков для импорта в VM (.qcow2, .img).
+#              Требует включения "Disk image (import)" на хранилище:
+#              Datacenter → Storage → <datastore> → Edit → Content.
+#   snippets — Произвольные файлы (cloud-init, скрипты и т.п.)
+#   vztmpl   — Шаблоны LXC-контейнеров (.tar.gz, .tar.zst)
+#
+# file_name нужен только когда path — это URL без расширения в имени файла.
+#   Провайдер берёт basename из path автоматически, поэтому для локальных
+#   файлов с валидным расширением (.qcow2, .img) file_name не указывай.
+#
 # uploads:
+#   # Пример 1: загрузка ISO-образа
+#   - name: my-iso
+#     node: {{ proxmox_node }}
+#     datastore: local
+#     content_type: iso
+#     source_file:
+#       path: /workspace/some.iso
+#     overwrite: true
+#     timeout_upload: 3600
+#
+#   # Пример 2: загрузка диска для импорта в VM (qcow2, локальный файл)
+#   # После загрузки ссылаться как: import_from: local:import/disk.qcow2
+#   - name: my-disk
+#     node: {{ proxmox_node }}
+#     datastore: local
+#     content_type: import
+#     source_file:
+#       path: /workspace/disk.qcow2
+#     overwrite: true
+#     timeout_upload: 3600
+#
+#   # Пример 3: загрузка диска по URL (имя файла берётся из URL)
+#   # Если URL не содержит расширения — укажи file_name явно
+#   - name: my-disk-from-url
+#     node: {{ proxmox_node }}
+#     datastore: local
+#     content_type: import
+#     source_file:
+#       path: https://example.com/images/disk        # URL без расширения
+#       file_name: disk.img                          # задать явно
+#     overwrite: true
+#     timeout_upload: 3600
+#
+#   # Пример 4: загрузка cloud-init сниппета
 #   - name: my-cloud-init
 #     node: {{ proxmox_node }}
 #     datastore: local
-#     content_type: snippets       # iso | snippets | vztmpl
+#     content_type: snippets
 #     source_file:
-#       path: /path/to/cloud-init.yaml   # путь на машине, где запускается Pulumi
-#       # file_name: cloud-init.yaml     # имя в хранилище (по умолчанию — basename path)
+#       path: /workspace/cloud-init.yaml
 #       # checksum: "sha256:abc123..."   # проверка целостности
 #       # insecure: false                # пропустить TLS для URL
 #     # file_mode: "0644"               # только для root@pam
@@ -808,193 +851,6 @@ sdn:
 {% endif %}
 
 # ==============================================================================
-# DEFAULTS  —  параметры по умолчанию, сгруппированные по типу ресурса
-# ==============================================================================
-defaults:
-
-  # ── VM defaults ──────────────────────────────────────────────────────────
-  vm:
-    node: {{ proxmox_node }}
-    bios: seabios              # seabios | ovmf (UEFI)
-
-    # ── CPU ──────────────────────────────────────────────────────────────
-    cpu:
-      cores: 2
-      type: host               # host | kvm64 | penryn | nehalem | ...
-      # sockets: 1
-      # numa: true
-      # affinity: "0-3"        # привязка к ядрам хоста
-      # flags: "aes=require;avx=require"
-      # hotplugged: 1          # CPU hotplug
-      # limit: 100             # макс. % одного ядра
-      # units: 1024
-
-    # ── Memory ───────────────────────────────────────────────────────────
-    memory:
-      dedicated: 2048          # MB
-      # floating: 1024         # плавающая память
-      # hugepages: true        # huge pages (требует настройки хоста)
-      # keep_hugepages: true
-      # shared: 512
-
-    # ── Disks ────────────────────────────────────────────────────────────
-    disks:
-      - size: 32               # GB
-        datastore: local-zfs
-        # aio: native          # native | writeback | writethrough
-        # backup: true
-        # cache: writeback     # none | directsync | writethrough | writeback | unsafe
-        # discard: "on"
-        # file_format: raw     # qcow2 | raw
-        # file_id: "local:iso/disk.img"    # импорт существующего образа
-        # import_from: "local:iso/disk.img"
-        # iothread: true
-        # replicate: false
-        # serial: "my-disk-001"
-        # speed: 500           # MB/s
-        # ssd: true
-
-    # ── Agent ────────────────────────────────────────────────────────────
-    agent:
-      enabled: true
-      trim: true
-      type: virtio
-      # timeout: 30
-      # wait_for_ip: true
-
-    # ── Boot ─────────────────────────────────────────────────────────────
-    # boot_orders: ["scsi0", "net0"]
-    # on_boot: true            # запускать при старте Proxmox
-    # started: true            # запустить сразу после создания
-    # stop_on_destroy: true
-
-    # ── OVMF / EFI (только если bios: ovmf) ──────────────────────────────
-    # efi_disk:
-    #   datastore_id: local-zfs
-    #   file_format: raw
-    #   type: "4m"
-    #   pre_enrolled_keys: false
-
-    # ── CD-ROM ───────────────────────────────────────────────────────────
-    # cdrom:
-    #   interface: ide2
-    #   file_id: "local:iso/some.iso"
-
-    # ── Startup order ─────────────────────────────────────────────────────
-    # startup:
-    #   order: 1
-    #   up_delay: 30
-    #   down_delay: 30
-
-    # ── Advanced ──────────────────────────────────────────────────────────
-    # acpi: true
-    # hotplug: "disk,network,cpu"
-    # keyboard_layout: "en-us"
-    # kvm_arguments: "-object rng-random,id=rng0,filename=/dev/urandom"
-    # machine: "q35"
-    # pool_id: "production"
-    # protection: false
-    # scsi_hardware: "virtio-scsi-pci"
-    # tablet_device: true
-    # tags: ["pulumi", "production"]
-
-    # ── VGA ───────────────────────────────────────────────────────────────
-    # vga:
-    #   type: std              # std | vmware | qxl | serial0
-    #   memory: 16             # MB
-    #   clipboard: vnc
-
-    # ── Watchdog ──────────────────────────────────────────────────────────
-    # watchdog:
-    #   model: i6300esb        # i6300esb | ib700
-    #   action: reset          # reset | poweroff | pause | debug
-    #   enabled: true
-
-    # ── TPM ───────────────────────────────────────────────────────────────
-    # tpm_state:
-    #   version: "2.0"
-    #   datastore_id: local
-
-    # ── SMBIOS ────────────────────────────────────────────────────────────
-    # smbios:
-    #   manufacturer: "My Company"
-    #   product: "VM"
-    #   serial: "VM-001"
-    #   uuid: "550e8400-e29b-41d4-a716-446655440000"
-
-    # ── PCI passthrough ───────────────────────────────────────────────────
-    # hostpcis:
-    #   - device: "0000:01:00.0"
-    #     pcie: true
-    #     rombar: true
-    #     xvga: false
-
-    # ── USB passthrough ───────────────────────────────────────────────────
-    # usbs:
-    #   - host: "5:1"          # Bus:Port или VendorID:ProductID
-    #     usb3: false
-
-    # ── NUMA ──────────────────────────────────────────────────────────────
-    # numas:
-    #   - cpus: "0-3"
-    #     memory: 4096
-    #     hostnodes: "0-1"
-    #     policy: bind         # bind | preferred | interleave
-
-    # ── Таймауты (секунды) ────────────────────────────────────────────────
-    # timeout_create: 300
-    # timeout_clone: 300
-    # timeout_start_vm: 300
-    # timeout_stop_vm: 300
-    # timeout_reboot: 300
-    # timeout_migrate: 300
-    # timeout_move_disk: 300
-    # timeout_shutdown_vm: 300
-
-  # ── LXC defaults ─────────────────────────────────────────────────────────
-  # lxc:
-  #   node: {{ proxmox_node }}
-  #   unprivileged: true
-  #   start_on_boot: false
-  #
-  #   cpu:
-  #     cores: 1
-  #     # architecture: amd64
-  #     # units: 1024
-  #
-  #   memory:
-  #     dedicated: 512         # MB
-  #     swap: 0                # MB
-  #
-  #   disk:
-  #     size: 4                # GB
-  #     datastore: local-zfs
-  #     # acl: false
-  #     # quota: false
-  #     # replicate: false
-  #
-  #   # tags: ["pulumi", "lxc"]
-  #   # pool_id: production
-  #
-  #   # features:
-  #   #   nesting: true        # для Docker внутри LXC
-  #   #   fuse: false
-  #   #   keyctl: false
-  #   #   mounts: []           # ["cifs", "nfs"]
-  #
-  #   # startup:
-  #   #   order: 1
-  #   #   up_delay: 10
-  #   #   down_delay: 10
-  #
-  #   # Таймауты (секунды)
-  #   # timeout_create: 1800
-  #   # timeout_clone: 1800
-  #   # timeout_start: 60
-  #   # timeout_update: 1800
-  #   # timeout_delete: 60
-
-# ==============================================================================
 # VMS  —  список VM
 # ==============================================================================
 # Шаблонные VM (template: true) создаются первыми.
@@ -1003,7 +859,9 @@ defaults:
 
 vms:
   - name: web01
+    node: {{ proxmox_node }}
     vmid: 101
+    bios: seabios              # seabios | ovmf (UEFI)
     networks:
       - bridge: vmbr0
         # vlan_id: 100
@@ -1037,6 +895,7 @@ vms:
     #         gateway: "fd00::1"
 
   - name: db01
+    node: {{ proxmox_node }}
     vmid: 110
     networks:
       - bridge: vmbr0
@@ -1072,7 +931,6 @@ vms:
 # ==============================================================================
 # CONTAINERS  —  LXC-контейнеры
 # ==============================================================================
-# Требует наличия defaults.lxc.
 # Сетевые интерфейсы именуются eth0, eth1, ... (auto) или задаются явно (name:).
 
 # containers:
