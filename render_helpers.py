@@ -5,7 +5,6 @@ import urllib.parse
 import urllib.request
 
 
-
 def proxmox_get(endpoint, api_token, path, insecure=False, **params):
     url = endpoint.rstrip("/") + "/api2/json" + path
     if params:
