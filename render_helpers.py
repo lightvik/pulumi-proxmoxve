@@ -4,6 +4,8 @@ import types
 import urllib.parse
 import urllib.request
 
+import yaml
+
 
 def proxmox_get(endpoint, api_token, path, insecure=False, **params):
     url = endpoint.rstrip("/") + "/api2/json" + path
@@ -360,9 +362,25 @@ sdn = types.SimpleNamespace(
 )
 
 
+# ── Утилиты шаблона ──────────────────────────────────────────────────────────
+
+
+def from_yaml(text):
+    """Parse an inline YAML string into a Python object."""
+    return yaml.safe_load(text)
+
+
+def to_yaml(obj, indent=2):
+    """Serialize a Python object to a YAML string (trailing newline stripped)."""
+    return yaml.dump(obj, allow_unicode=True, default_flow_style=False, indent=indent).rstrip()
+
+
 # ── Реестр Jinja2-глобалов ────────────────────────────────────────────────────
 
 JINJA2_GLOBALS = {
+    "from_yaml": from_yaml,
+    "to_yaml": to_yaml,
+    # Proxmox API
     "proxmox_get": proxmox_get,
     # Версия
     "get_version": get_version,

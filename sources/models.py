@@ -52,6 +52,17 @@ class MemorySpec(BaseModel):
 # ============================================================================
 
 
+class DiskSpeedSpec(BaseModel):
+    read: Optional[int] = None
+    read_burstable: Optional[int] = None
+    write: Optional[int] = None
+    write_burstable: Optional[int] = None
+    iops_read: Optional[int] = None
+    iops_read_burstable: Optional[int] = None
+    iops_write: Optional[int] = None
+    iops_write_burstable: Optional[int] = None
+
+
 class DiskSpec(BaseModel):
     size: int
     datastore: str  # maps to datastore_id in proxmox
@@ -66,7 +77,7 @@ class DiskSpec(BaseModel):
     path_in_datastore: Optional[str] = None
     replicate: Optional[bool] = None
     serial: Optional[str] = None
-    speed: Optional[int] = None
+    speed: Optional[DiskSpeedSpec] = None
     ssd: Optional[bool] = None
 
 
@@ -97,7 +108,7 @@ class NetworkDeviceSpec(BaseModel):
     mac_address: Optional[str] = None
     mtu: Optional[int] = None
     queues: Optional[int] = None
-    rate_limit: Optional[int] = None
+    rate_limit: Optional[float] = None
     trunks: Optional[list[int]] = None
     vlan_id: Optional[int] = None
 

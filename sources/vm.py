@@ -20,7 +20,7 @@ def build_vm(
             mtu=net.mtu,
             queues=net.queues,
             rate_limit=net.rate_limit,
-            trunks=net.trunks,
+            trunks=";".join(str(t) for t in net.trunks) if net.trunks else None,
             vlan_id=net.vlan_id,
         )
         for net in spec.networks
@@ -42,7 +42,16 @@ def build_vm(
             path_in_datastore=d.path_in_datastore,
             replicate=d.replicate,
             serial=d.serial,
-            speed=d.speed,
+            speed=proxmox.VmLegacyDiskSpeedArgs(
+                read=d.speed.read,
+                read_burstable=d.speed.read_burstable,
+                write=d.speed.write,
+                write_burstable=d.speed.write_burstable,
+                iops_read=d.speed.iops_read,
+                iops_read_burstable=d.speed.iops_read_burstable,
+                iops_write=d.speed.iops_write,
+                iops_write_burstable=d.speed.iops_write_burstable,
+            ) if d.speed else None,
             ssd=d.ssd,
         )
         for i, d in enumerate(spec.disks)

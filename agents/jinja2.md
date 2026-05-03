@@ -37,13 +37,50 @@ Return value is always the unwrapped `data` field from `{"data": ...}`.
 
 ## Function signature convention
 
-```
+```text
 get_X(endpoint, api_token, [resource_id, ...], insecure=False) → dict | list[dict]
 ```
 
 - `endpoint` — full base URL, e.g. `"https://pve.example.com:8006"`
 - `api_token` — `"user@realm!token-id=secret"`
 - `insecure` — skip TLS verification
+
+## Utility globals (no API call)
+
+| Name | Source | Description |
+| --- | --- | --- |
+| `from_yaml` | `render_helpers.py` | Parse an inline YAML string → Python object |
+| `to_yaml` | `render_helpers.py` | Serialize a Python object → multi-line YAML string |
+| `load_yaml` | `entrypoint.py` | Load a YAML file by path → Python object; supports `.j2` files (rendered first) |
+
+### `from_yaml(text)` — inline YAML в переменную
+
+```jinja2
+{%- set d = from_yaml("""
+  bios: ovmf
+  machine: q35
+  cpu:
+    cores: 2
+    type: host
+  memory:
+    dedicated: 4096
+    floating: 4096
+""") %}
+
+  bios: {{ d.bios }}
+  cpu: {{ d.cpu | tojson }}
+```
+
+### `load_yaml(path)` — YAML-файл в переменную
+
+```jinja2
+{%- set d = load_yaml('vm_defaults.yaml') %}
+  bios: {{ d.bios }}
+```
+
+Path is relative to the template directory. If the file ends in `.j2`, it is rendered as a Jinja2 template first.
+
+---
 
 ## JINJA2_GLOBALS — flat functions
 

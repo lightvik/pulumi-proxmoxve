@@ -727,6 +727,15 @@ provider:
 #           comment: "YubiKey 5"
 #           # path: "1-1.2"      # опционально — порт (вместо ID-based mapping)
 #
+#   # ── Маппинги директорий ───────────────────────────────────────────────────
+#   hw_mapping_dir:
+#     - name: data-dir
+#       comment: "Shared data directory"
+#       legacy: false             # false → Dir (v8+), true → DirLegacy
+#       maps:
+#         - node: pve
+#           path: /mnt/data       # POSIX-путь на ноде
+#
 #   # ── Серверы метрик ────────────────────────────────────────────────────────
 #   metrics_servers:
 #     - name: influxdb-main
@@ -791,7 +800,7 @@ provider:
 sdn:
   zones:
     - name: myzone
-      type: simple           # simple | qinq | vxlan | evpn
+      type: simple           # simple | vlan | qinq | vxlan | evpn
       comment: "Main SDN zone"
       bridge: vmbr0
       mtu: 1500
@@ -851,82 +860,343 @@ sdn:
 {% endif %}
 
 # ==============================================================================
-# VMS  —  список VM
+# VMS  —  виртуальные машины (QEMU/KVM)
 # ==============================================================================
 # Шаблонные VM (template: true) создаются первыми.
 # VM с clone.vm_id, указывающим на шаблон из этого же инвентаря,
 # автоматически получают depends_on.
+#
+# Обязательные поля: name, vmid, node, networks (минимум один интерфейс).
 
 vms:
-  - name: web01
-    node: {{ proxmox_node }}
-    vmid: 101
-    bios: seabios              # seabios | ovmf (UEFI)
-    networks:
-      - bridge: vmbr0
-        # vlan_id: 100
-        # firewall: true
-        # rate_limit: 1000000000   # бит/сек (1 Gbps)
-        # mtu: 1500
-        # mac_address: "52:54:00:12:34:56"
-        # queues: 1
-        # disconnected: false
-    clone:
-      vm_id: 9000             # VMID шаблона (должен существовать в Proxmox)
-      # datastore_id: local-zfs
-      # full: true
-    # initialization:
-    #   user_data_file_id: local:snippets/cloud-init.yaml   # cloud-init user-data
-    #   vendor_data_file_id: local:snippets/vendor.yaml     # опционально
-    #   meta_data_file_id: local:snippets/meta.yaml         # опционально
-    #   network_data_file_id: local:snippets/network.yaml   # опционально
-    #   type: nocloud              # nocloud | configdrive2
-    #   interface: ide2            # интерфейс cloud-init drive
-    #   file_format: raw           # raw | qcow2
-    #   dns:
-    #     servers: [1.1.1.1, 8.8.8.8]
-    #     domain: example.lan
-    #   ip_configs:
-    #     - ipv4:
-    #         address: 10.0.0.10/24
-    #         gateway: 10.0.0.1
-    #       ipv6:
-    #         address: "fd00::10/64"
-    #         gateway: "fd00::1"
 
-  - name: db01
-    node: {{ proxmox_node }}
-    vmid: 110
+  # ── Пример 1: VM с импортом диска (UEFI, без cloud-init) ────────────────────
+  - name: myvm.example.com               # Pulumi logical name = имя VM в Proxmox
+    vmid: 101                            # VMID (уникальный в кластере)
+    node: {{ proxmox_node }}             # имя ноды Proxmox
+    bios: ovmf                           # seabios | ovmf (UEFI)
+    machine: "q35"                       # q35 | i440fx
+    on_boot: true
+    started: true
+    tags: ["pulumi"]
     networks:
       - bridge: vmbr0
-    clone:
-      vm_id: 9000
     cpu:
-      cores: 4
+      cores: 2
       type: host
     memory:
-      dedicated: 8192
-      floating: 4096
+      dedicated: 2048
     disks:
-      - size: 50
-        datastore: local-zfs
-      - size: 200
-        datastore: local-zfs
-        cache: writeback
+      - size: 20
+        datastore: local-lvm
+        import_from: local:import/disk.qcow2
+        discard: "on"
         ssd: true
-    protection: true
-    # ha:
-    #   enabled: true
-    #   group: critical      # имя из ha_groups
-    #   state: started       # started | stopped | disabled
-    #   max_restart: 2
-    #   max_relocate: 1
-    # initialization:
-    #   user_data_file_id: local:snippets/db-cloud-init.yaml
-    #   ip_configs:
-    #     - ipv4:
-    #         address: 10.0.0.11/24
-    #         gateway: 10.0.0.1
+    efi_disk:
+      datastore_id: local-lvm
+      pre_enrolled_keys: false
+    boot_orders: [scsi0]
+
+  # ── Пример 2: клон шаблона с cloud-init и статическим IP ────────────────────
+  # - name: web01.example.com
+  #   vmid: 201
+  #   node: {{ proxmox_node }}
+  #   tags: ["pulumi", "web"]
+  #   on_boot: true
+  #   started: true
+  #   networks:
+  #     - bridge: vmbr0
+  #       vlan_id: 100
+  #   cpu:
+  #     cores: 2
+  #     type: host
+  #   memory:
+  #     dedicated: 2048
+  #     floating: 1024                   # balloon min
+  #   clone:
+  #     vm_id: 9000                      # VMID шаблона
+  #     datastore_id: local-zfs
+  #     full: true
+  #   initialization:
+  #     type: nocloud
+  #     dns:
+  #       servers: [1.1.1.1, 8.8.8.8]
+  #       domain: example.lan
+  #     ip_configs:
+  #       - ipv4:
+  #           address: 10.0.0.10/24
+  #           gateway: 10.0.0.1
+
+  # ── Полный справочник всех параметров VM ─────────────────────────────────────
+  # - name: full-reference.example.com
+  #   vmid: 999
+  #   node: {{ proxmox_node }}
+  #
+  #   # ── Идентификация и жизненный цикл ──────────────────────────────────────
+  #   tags: ["pulumi", "env:prod"]        # произвольные теги
+  #   template: false                     # true = создать как шаблон (шаблоны идут первыми)
+  #   started: true                       # true = запустить; false = создать выключенной
+  #   on_boot: true                       # автозапуск при старте гипервизора
+  #   protection: false                   # защита от удаления через UI/API
+  #   pool_id: production                 # добавить в пул
+  #   reboot: false                       # перезагрузить после apply изменений
+  #   reboot_after_update: false          # перезагрузить после online-обновления параметров
+  #   migrate: false                      # выполнить live-миграцию при изменении node
+  #   stop_on_destroy: true               # выключить перед удалением
+  #   purge_on_destroy: false             # удалить из списка задач и снапшоты
+  #   delete_unreferenced_disks_on_destroy: false
+  #   hook_script_file_id: local:snippets/hook.sh   # скрипт-хук (snippets)
+  #
+  #   # ── Железо и BIOS ────────────────────────────────────────────────────────
+  #   bios: seabios                       # seabios | ovmf (для UEFI нужен efi_disk)
+  #   machine: "q35"                      # q35 (рекомендуется) | i440fx
+  #   acpi: true                          # ACPI
+  #   tablet_device: true                 # USB-tablet (выравнивание указателя VNC)
+  #   keyboard_layout: "en-us"           # раскладка клавиатуры
+  #   operating_system:
+  #     type: l26                         # l26 | win11 | win10 | win81 | win8 | win7 |
+  #                                       # wxp | w2k3 | w2k8 | w2k | solaris | other
+  #   scsi_hardware: virtio-scsi-pci      # virtio-scsi-pci | virtio-scsi-single |
+  #                                       # lsi | lsi53c810 | lsi53c895a | megasas
+  #   hotplug: "network,disk,usb"        # что разрешено hot-plug (пустая строка — всё запрещено)
+  #   kvm_arguments: ""                   # дополнительные аргументы QEMU
+  #
+  #   # ── CPU ──────────────────────────────────────────────────────────────────
+  #   cpu:
+  #     cores: 4                          # ядер на сокет (по умолчанию 2)
+  #     sockets: 1                        # количество сокетов
+  #     type: host                        # host | kvm64 | kvm32 | x86-64-v2-AES |
+  #                                       # Cascadelake-Server | EPYC | ... (qemu cpu names)
+  #     architecture: x86_64             # x86_64 | aarch64
+  #     affinity: "0-3"                  # CPU pinning: "0,2,4" или "0-3"
+  #     limit: 0                          # лимит CPU (% × sockets × cores), 0 = нет
+  #     units: "1024"                     # относительный вес (64–500000)
+  #     hotplugged: 0                     # дополнительные ядра для hot-plug
+  #     flags: "+aes;+pdpe1gb"           # флаги CPU через ";"
+  #     numa: false                       # включить NUMA-топологию
+  #
+  #   # ── Память ───────────────────────────────────────────────────────────────
+  #   memory:
+  #     dedicated: 4096                   # RAM, МБ (по умолчанию 2048)
+  #     floating: 1024                    # balloon min, МБ (включает balloon driver)
+  #     shared: 0                         # shared memory для ivshmem, МБ
+  #     hugepages: false                  # использовать 1 GiB hugepages
+  #     keep_hugepages: false             # сохранять hugepages после остановки VM
+  #
+  #   # ── QEMU Agent ───────────────────────────────────────────────────────────
+  #   agent:
+  #     enabled: true                     # по умолчанию true
+  #     trim: true                        # fstrim при каждом бэкапе
+  #     type: virtio                      # virtio | isa
+  #     timeout: 30                       # секунд ожидания ответа агента
+  #     wait_for_ip: false                # ждать IP от агента после старта
+  #
+  #   # ── Сетевые интерфейсы ────────────────────────────────────────────────────
+  #   # Порядок совпадает с net0, net1, net2, ... в Proxmox
+  #   networks:
+  #     - bridge: vmbr0                   # имя Linux-бриджа (обязательно)
+  #       model: virtio                   # virtio | e1000 | e1000e | rtl8139 | vmxnet3
+  #       vlan_id: 100                    # VLAN tag (1–4094)
+  #       mac_address: "52:54:00:12:34:56"
+  #       firewall: false                 # применять firewall-правила этого интерфейса
+  #       mtu: 1500                       # MTU (только для virtio; 1 = унаследовать от бриджа)
+  #       queues: 1                       # очереди virtio (1–64)
+  #       rate_limit: 125.0              # MB/s (125 MB/s ≈ 1 Gbps)
+  #       trunks: [10, 20, 30]           # VLAN trunk (нужен VLAN-aware бридж)
+  #       enabled: true
+  #       disconnected: false
+  #
+  #   # ── Диски ────────────────────────────────────────────────────────────────
+  #   # Нумерация: scsi0, scsi1, scsi2, ... (порядок в списке)
+  #   disks:
+  #     - size: 50                        # размер в ГБ (обязательно)
+  #       datastore: local-lvm            # хранилище (обязательно)
+  #       discard: "on"                   # "on" | "ignore" (по умолчанию "on")
+  #       ssd: true                       # SSD-эмуляция
+  #       cache: none                     # none | writeback | writethrough |
+  #                                       # directsync | unsafe
+  #       aio: io_uring                   # io_uring | native | threads
+  #       backup: true                    # включать в бэкап
+  #       iothread: false                 # выделенный I/O-поток (virtio-scsi-single)
+  #       replicate: true                 # включать в задание репликации
+  #       file_format: raw                # raw | qcow2 | vmdk
+  #       file_id: "local:iso/disk.img"  # уже загруженный файл (вместо пустого диска)
+  #       import_from: "local:import/disk.qcow2"  # импорт из образа (content_type: import)
+  #       path_in_datastore: ""          # явный путь (только для чтения из state)
+  #       serial: "deadbeef"             # серийный номер диска (до 20 символов)
+  #       speed:                          # I/O ограничения (все поля опциональны)
+  #         read: 200                     # макс. скорость чтения, MB/s
+  #         read_burstable: 400          # пиковая скорость чтения, MB/s
+  #         write: 100                   # макс. скорость записи, MB/s
+  #         write_burstable: 200
+  #         iops_read: 5000              # макс. IOPS чтения
+  #         iops_read_burstable: 10000
+  #         iops_write: 2000             # макс. IOPS записи
+  #         iops_write_burstable: 4000
+  #
+  #   # ── EFI диск (обязателен при bios: ovmf) ─────────────────────────────────
+  #   efi_disk:
+  #     datastore_id: local-lvm          # хранилище (обязательно)
+  #     pre_enrolled_keys: false         # true = включить Secure Boot с ключами Microsoft
+  #     type: "4m"                       # 2m | 4m (4m рекомендуется для новых ОС)
+  #     file_format: raw                 # raw | qcow2
+  #
+  #   # ── TPM 2.0 (требует bios: ovmf + machine: q35) ───────────────────────────
+  #   tpm_state:
+  #     datastore_id: local-lvm
+  #     version: "v2.0"                  # v1.2 | v2.0
+  #
+  #   # ── CD/DVD привод ─────────────────────────────────────────────────────────
+  #   cdrom:
+  #     enabled: true
+  #     interface: ide3                  # ide0–ide3 (ide2 занят cloud-init если есть)
+  #     file_id: "local:iso/ubuntu.iso" # если не задан — пустой лоток
+  #
+  #   # ── Порядок загрузки ─────────────────────────────────────────────────────
+  #   boot_orders: [scsi0, net0]        # scsiN | sataN | virtioN | ideN | netN
+  #
+  #   # ── Автозапуск и порядок остановки ───────────────────────────────────────
+  #   startup:
+  #     order: 1                         # порядок запуска (1 = первый, меньше = раньше)
+  #     up_delay: 30                     # сек ожидать после запуска VM перед следующей
+  #     down_delay: 60                   # сек ожидать при остановке кластера
+  #
+  #   # ── Клонирование ─────────────────────────────────────────────────────────
+  #   # Если задан clone: — VM создаётся клонированием шаблона.
+  #   # Остальные параметры (cpu/memory/disks/networks) применяются поверх.
+  #   clone:
+  #     vm_id: 9000                      # VMID шаблона (обязательно)
+  #     node_name: {{ proxmox_node }}    # нода шаблона (если отличается от node)
+  #     datastore_id: local-zfs         # куда клонировать диски
+  #     full: true                       # true = полный клон; false = linked clone
+  #     retries: 3                       # повторных попыток при ошибке API
+  #
+  #   # ── Cloud-init ────────────────────────────────────────────────────────────
+  #   # Создаёт cloud-init ISO на интерфейсе ide2 (или interface:).
+  #   # Для использования VM должна поддерживать cloud-init (nocloud или configdrive2).
+  #   initialization:
+  #     type: nocloud                    # nocloud | configdrive2
+  #     interface: ide2                  # интерфейс cloud-init drive (не менять без причины)
+  #     file_format: raw                 # raw | qcow2
+  #     user_data_file_id: local:snippets/cloud-init.yaml
+  #     vendor_data_file_id: local:snippets/vendor.yaml
+  #     meta_data_file_id: local:snippets/meta.yaml
+  #     network_data_file_id: local:snippets/network.yaml
+  #     dns:
+  #       servers: [1.1.1.1, 8.8.8.8]
+  #       domain: example.lan
+  #     ip_configs:
+  #       - ipv4:
+  #           address: 10.0.0.10/24
+  #           gateway: 10.0.0.1
+  #         ipv6:
+  #           address: "fd00::10/64"
+  #           gateway: "fd00::1"
+  #
+  #   # ── High Availability ────────────────────────────────────────────────────
+  #   # Имя group должно совпадать с ha_groups[].name
+  #   ha:
+  #     enabled: true
+  #     group: critical                  # HA-группа из ha_groups (если не задан — без группы)
+  #     state: started                   # started | stopped | disabled
+  #     max_restart: 2
+  #     max_relocate: 1
+  #     comment: "Critical production VM"
+  #
+  #   # ── VGA / дисплей ────────────────────────────────────────────────────────
+  #   vga:
+  #     type: std                        # std | cirrus | vmware | qxl | qxl4 |
+  #                                      # serial0 | serial1 | serial2 | serial3 |
+  #                                      # virtio | virtio-gl | none
+  #     memory: 16                       # видеопамять, МБ
+  #     clipboard: vnc                   # vnc (только для spice/qxl)
+  #
+  #   # ── PCI passthrough ──────────────────────────────────────────────────────
+  #   # Требует: machine: q35, vIOMMU включён на ноде
+  #   hostpcis:
+  #     - device: hostpci0               # слот: hostpci0, hostpci1, ...
+  #       id: "0000:01:00.0"             # PCI ID устройства (вместо mapping)
+  #       mapping: gpu-nvidia            # имя из hw_mapping_pci (вместо id)
+  #       pcie: true                     # PCIe (рекомендуется для q35)
+  #       mdev: "nvidia-222"            # mediated device type (для vGPU)
+  #       rombar: true                   # использовать ROM BAR
+  #       rom_file: ""                   # путь к ROM файлу
+  #       xvga: false                    # основной GPU (отключает эмулированный VGA)
+  #
+  #   # ── USB passthrough ───────────────────────────────────────────────────────
+  #   usbs:
+  #     - host: "1050:0407"             # vendor:product (перебор по ID)
+  #       mapping: yubi-key             # имя из hw_mapping_usb (вместо host)
+  #       usb3: true                    # true = USB 3.0; false = USB 2.0
+  #
+  #   # ── VirtioFS (shared filesystem через mapped директорию) ─────────────────
+  #   # Требует: machine: q35 + virtiofsd на ноде
+  #   virtiofs:
+  #     - mapping: data-dir             # имя из hw_mapping_dir (обязательно)
+  #       cache: auto                   # auto | always | never | metadata
+  #       direct_io: false
+  #       expose_acl: false
+  #       expose_xattr: false
+  #
+  #   # ── Последовательные порты ────────────────────────────────────────────────
+  #   serial_devices:
+  #     - device: socket                # socket (pty через Proxmox) | /dev/ttyS0 | ...
+  #
+  #   # ── NUMA ─────────────────────────────────────────────────────────────────
+  #   # Активировать при cpu.numa: true
+  #   numas:
+  #     - device: numa0
+  #       cpus: "0-3"                   # ядра хоста (диапазон или список)
+  #       memory: 4096                  # МБ
+  #       hostnodes: "0"                # NUMA-нода хоста
+  #       policy: bind                  # bind | interleave | preferred
+  #
+  #   # ── RNG (генератор случайных чисел) ──────────────────────────────────────
+  #   rngs:
+  #     - source: /dev/urandom          # /dev/urandom | /dev/random | /dev/hwrng
+  #       max_bytes: 1024               # байт за period (0 = без ограничений)
+  #       period: 1000                  # мс между выдачами
+  #
+  #   # ── Аудио ────────────────────────────────────────────────────────────────
+  #   audio_device:
+  #     driver: spice                   # spice | none
+  #     device: intel-hda               # AC97 | intel-hda | ich9-intel-hda
+  #     enabled: true
+  #
+  #   # ── Watchdog ─────────────────────────────────────────────────────────────
+  #   watchdog:
+  #     model: i6300esb                 # i6300esb | ib700
+  #     action: reset                   # reset | shutdown | poweroff | pause | debug | none
+  #     enabled: true
+  #
+  #   # ── SMBIOS / DMI info ────────────────────────────────────────────────────
+  #   smbios:
+  #     manufacturer: "Acme Corp"
+  #     product: "MyVM"
+  #     version: "1.0"
+  #     serial: "SN0001"
+  #     sku: "SKU-001"
+  #     family: "Server"
+  #     uuid: "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+  #
+  #   # ── AMD SEV (Secure Encrypted Virtualization) ─────────────────────────────
+  #   # Требует процессор AMD EPYC (Genoa/Milan) и поддержку в ядре
+  #   amd_sev:
+  #     type: std                       # std | es | snp
+  #     allow_smt: false
+  #     kernel_hashes: false
+  #     no_debug: false
+  #     no_key_sharing: false
+  #
+  #   # ── Таймауты (в секундах) ─────────────────────────────────────────────────
+  #   timeout_create: 1800
+  #   timeout_clone: 1800
+  #   timeout_start_vm: 300
+  #   timeout_stop_vm: 300
+  #   timeout_shutdown_vm: 300
+  #   timeout_reboot: 300
+  #   timeout_migrate: 1800
+  #   timeout_move_disk: 1800
 
 # ==============================================================================
 # CONTAINERS  —  LXC-контейнеры
@@ -936,6 +1206,7 @@ vms:
 # containers:
 #   - name: proxy01
 #     vmid: 201
+#     node: {{ proxmox_node }}
 #     networks:
 #       - bridge: vmbr0
 #         # name: eth0       # авто, если не задан
