@@ -25,6 +25,8 @@ from sdn import (
     build_sdn_fabric_node_ospf,
 )
 from download import build_download_file
+from upload import build_upload_file
+from cloned_vm import build_cloned_vm
 from network import build_linux_bridge, build_linux_vlan
 from node_config import build_dns, build_hosts, build_time
 from storage import build_storages
@@ -78,6 +80,9 @@ for spec in inv.node_time:
 
 # ── Downloads ────────────────────────────────────────────────────────────────
 download_resources = [build_download_file(dl, provider) for dl in inv.downloads]
+
+# ── Uploads (локальные файлы → Proxmox storage) ───────────────────────────────
+upload_resources = [build_upload_file(ul, provider) for ul in inv.uploads]
 
 # ── Pools ────────────────────────────────────────────────────────────────────
 pools = {spec.id: build_pool(spec, provider) for spec in inv.pools}
@@ -154,6 +159,10 @@ for spec in inv.vms:
 
     if spec.ha and spec.ha.enabled:
         build_ha_resource(spec, vm, provider)
+
+# ── Cloned VMs (облегчённый ресурс) ──────────────────────────────────────────
+for spec in inv.cloned_vms:
+    build_cloned_vm(spec, provider)
 
 # ── LXC Containers ───────────────────────────────────────────────────────────
 container_resources: dict[str, proxmox.ContainerLegacy] = {}

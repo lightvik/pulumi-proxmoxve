@@ -917,6 +917,29 @@ class DownloadFileSpec(BaseModel):
 
 
 # ============================================================================
+# UPLOAD FILE (загрузка с локальной машины через API)
+# ============================================================================
+
+
+class UploadFileSourceSpec(BaseModel):
+    path: str  # путь к локальному файлу или URL
+    checksum: Optional[str] = None  # SHA256
+    file_name: Optional[str] = None  # переопределить имя файла в хранилище
+    insecure: Optional[bool] = None  # пропустить TLS-проверку для URL
+
+
+class UploadFileSpec(BaseModel):
+    name: str
+    node: str
+    datastore: str
+    source_file: UploadFileSourceSpec
+    content_type: Optional[str] = None  # iso | snippets | vztmpl
+    file_mode: Optional[str] = None  # e.g. "0644"
+    overwrite: Optional[bool] = None
+    timeout_upload: Optional[int] = None  # секунды, по умолчанию 1800
+
+
+# ============================================================================
 # SDN — Software Defined Networking
 # ============================================================================
 
@@ -1128,6 +1151,36 @@ class VMSpec(BaseModel):
 
 
 # ============================================================================
+# CLONED VM (облегчённый ресурс cloned.Vm / cloned.VmLegacy)
+# ============================================================================
+
+
+class ClonedVmCloneSpec(BaseModel):
+    source_vm_id: int
+    bandwidth_limit: Optional[int] = None
+    full: Optional[bool] = None
+    pool_id: Optional[str] = None
+    retries: Optional[int] = None
+    snapshot_name: Optional[str] = None
+    source_node_name: Optional[str] = None  # нода-источник шаблона
+    target_datastore: Optional[str] = None
+    target_format: Optional[str] = None  # raw | qcow2
+
+
+class ClonedVmSpec(BaseModel):
+    name: str
+    node: str
+    clone: ClonedVmCloneSpec
+    description: Optional[str] = None
+    tags: list[str] = []
+    started: Optional[bool] = None
+    stop_on_destroy: Optional[bool] = None
+    purge_on_destroy: Optional[bool] = None
+    delete_unreferenced_disks_on_destroy: Optional[bool] = None
+    legacy: bool = True  # True → cloned.VmLegacy, False → cloned.Vm
+
+
+# ============================================================================
 # LXC CONTAINER SPECIFICATION
 # ============================================================================
 
@@ -1291,6 +1344,18 @@ class HwMappingUsbSpec(BaseModel):
     legacy: bool = False  # True → UsbLegacy, False → Usb
 
 
+class HwDirMapSpec(BaseModel):
+    node: str
+    path: str  # POSIX-путь на ноде, например /mnt/data
+
+
+class HwMappingDirSpec(BaseModel):
+    name: str
+    comment: Optional[str] = None
+    maps: list[HwDirMapSpec] = []
+    legacy: bool = False  # True → DirLegacy, False → Dir
+
+
 class MetricsServerSpec(BaseModel):
     name: str
     disable: Optional[bool] = None
@@ -1348,6 +1413,7 @@ class ClusterMiscConfig(BaseModel):
     options: Optional[ClusterOptionsSpec] = None
     hw_mapping_pci: list[HwMappingPciSpec] = []
     hw_mapping_usb: list[HwMappingUsbSpec] = []
+    hw_mapping_dir: list[HwMappingDirSpec] = []
     metrics_servers: list[MetricsServerSpec] = []
     oci_images: list[OciImageSpec] = []
     apt_repositories: list[AptRepositorySpec] = []
@@ -1373,6 +1439,8 @@ class Inventory(BaseModel):
     acme: Optional[AcmeConfig] = None
     cluster_misc: Optional[ClusterMiscConfig] = None
     downloads: list[DownloadFileSpec] = []
+    uploads: list[UploadFileSpec] = []
+    cloned_vms: list[ClonedVmSpec] = []
     sdn: Optional[SdnConfig] = None
     network_bridges: list[NetworkBridgeSpec] = []
     network_vlans: list[NetworkVlanSpec] = []

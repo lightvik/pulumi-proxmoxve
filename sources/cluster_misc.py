@@ -6,6 +6,7 @@ from models import (
     ClusterOptionsSpec,
     HwMappingPciSpec,
     HwMappingUsbSpec,
+    HwMappingDirSpec,
     MetricsServerSpec,
     OciImageSpec,
     AptRepositorySpec,
@@ -172,6 +173,46 @@ def build_hw_mapping_usb(
     )
 
 
+def build_hw_mapping_dir(
+    spec: HwMappingDirSpec,
+    provider: proxmox.Provider,
+):
+    args: dict = {}
+    if spec.comment is not None:
+        args["comment"] = spec.comment
+    if spec.maps:
+        if spec.legacy:
+            args["maps"] = [
+                proxmox.hardware.mapping.DirLegacyMapArgs(
+                    node=m.node,
+                    path=m.path,
+                )
+                for m in spec.maps
+            ]
+        else:
+            args["maps"] = [
+                proxmox.hardware.mapping.DirMapArgs(
+                    node=m.node,
+                    path=m.path,
+                )
+                for m in spec.maps
+            ]
+
+    if spec.legacy:
+        return proxmox.hardware.mapping.DirLegacy(
+            f"hw-mapping-dir-{spec.name}",
+            name=spec.name,
+            **args,
+            opts=pulumi.ResourceOptions(provider=provider),
+        )
+    return proxmox.hardware.mapping.Dir(
+        f"hw-mapping-dir-{spec.name}",
+        name=spec.name,
+        **args,
+        opts=pulumi.ResourceOptions(provider=provider),
+    )
+
+
 def build_metrics_server(
     spec: MetricsServerSpec,
     provider: proxmox.Provider,
@@ -302,6 +343,8 @@ def build_cluster_misc(cfg: ClusterMiscConfig, provider: proxmox.Provider) -> No
         build_hw_mapping_pci(spec, provider)
     for spec in cfg.hw_mapping_usb:
         build_hw_mapping_usb(spec, provider)
+    for spec in cfg.hw_mapping_dir:
+        build_hw_mapping_dir(spec, provider)
     for spec in cfg.metrics_servers:
         build_metrics_server(spec, provider)
     for spec in cfg.oci_images:

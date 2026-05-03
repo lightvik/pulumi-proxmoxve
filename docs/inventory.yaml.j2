@@ -206,6 +206,53 @@ provider:
 #     # decompression_algorithm: gz
 
 # ==============================================================================
+# UPLOADS  —  загрузка файлов с локальной машины на Proxmox (опционально)
+# ==============================================================================
+# Pulumi передаёт файл через API. Для больших ISO используйте downloads: —
+# там Proxmox скачивает сам по URL без участия клиентской машины.
+#
+# uploads:
+#   - name: my-cloud-init
+#     node: {{ proxmox_node }}
+#     datastore: local
+#     content_type: snippets       # iso | snippets | vztmpl
+#     source_file:
+#       path: /path/to/cloud-init.yaml   # путь на машине, где запускается Pulumi
+#       # file_name: cloud-init.yaml     # имя в хранилище (по умолчанию — basename path)
+#       # checksum: "sha256:abc123..."   # проверка целостности
+#       # insecure: false                # пропустить TLS для URL
+#     # file_mode: "0644"               # только для root@pam
+#     # overwrite: true
+#     # timeout_upload: 1800            # секунды
+
+# ==============================================================================
+# CLONED_VMS  —  облегчённое клонирование VM (опционально)
+# ==============================================================================
+# Используйте когда нужно клонировать шаблон без изменения конфигурации.
+# Для VM с кастомными CPU/disk/network используйте раздел vms: с clone:.
+#
+# cloned_vms:
+#   - name: app01
+#     node: {{ proxmox_node }}
+#     legacy: true                 # true → cloned.VmLegacy (рекомендуется)
+#     clone:
+#       source_vm_id: 9000         # VMID шаблона-источника
+#       # source_node_name: pve    # нода шаблона (если отличается от node)
+#       # full: true               # полный клон (по умолчанию linked)
+#       # target_datastore: local-zfs
+#       # target_format: raw       # raw | qcow2
+#       # snapshot_name: snap1     # клонировать из снапшота
+#       # bandwidth_limit: 100     # MB/s
+#       # retries: 3
+#       # pool_id: production
+#     # description: "Managed by Pulumi"
+#     # tags: ["pulumi", "app"]
+#     # started: true
+#     # stop_on_destroy: true
+#     # purge_on_destroy: false
+#     # delete_unreferenced_disks_on_destroy: false
+
+# ==============================================================================
 # RBAC  —  роли, группы, пользователи, токены, ACL, realm'ы (опционально)
 # ==============================================================================
 # rbac:

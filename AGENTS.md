@@ -5,7 +5,7 @@ Pulumi-based infrastructure-as-code tool for Proxmox VE. Users write an `invento
 ## Deep-dive references
 
 | Topic | File |
-|---|---|
+| --- | --- |
 | Runtime pipeline (Docker → Jinja2 → Pulumi) | [agents/architecture.md](agents/architecture.md) |
 | Inventory model and all top-level fields | [agents/inventory.md](agents/inventory.md) |
 | Builder pattern and adding new resource types | [agents/builders.md](agents/builders.md) |
@@ -13,10 +13,11 @@ Pulumi-based infrastructure-as-code tool for Proxmox VE. Users write an `invento
 
 ## File map
 
-```
+```text
 pulumi-proxmoxve/
 ├── Dockerfile                    # image: OracleLinux 10 + Pulumi + pulumi-proxmoxve + rich
 ├── entrypoint.py                 # renders inventory.yaml.j2, then runs pulumi up (rich UI)
+├── inventory.yaml.j2             # РАБОЧИЙ файл пользователя — не добавлять сюда примеры
 ├── render_helpers.py             # Jinja2 globals — Proxmox REST API helpers
 ├── sources/
 │   ├── models.py                 # ALL Pydantic models; Inventory is the root
@@ -26,6 +27,7 @@ pulumi-proxmoxve/
 │   │   └── __main__.py           # Pulumi program entry point
 │   ├── vm.py                     # build_vm()
 │   ├── lxc.py                    # build_container()
+│   ├── cloned_vm.py              # build_cloned_vm()
 │   ├── cloud_init.py             # build_cloud_init_file()
 │   ├── ssh_key.py                # build_ssh_key()
 │   ├── pool.py                   # build_pool()
@@ -40,9 +42,10 @@ pulumi-proxmoxve/
 │   ├── network.py                # build_linux_bridge/vlan()
 │   ├── node_config.py            # build_dns/hosts/time()
 │   ├── storage.py                # build_storages()
-│   └── download.py               # build_download_file()
+│   ├── download.py               # build_download_file()
+│   └── upload.py                 # build_upload_file()
 └── docs/
-    ├── inventory.yaml.j2         # full annotated example of every inventory field
+    ├── inventory.yaml.j2         # полный аннотированный пример всех полей inventory
     └── jinja_functions.md        # reference for all render_helpers.py functions
 ```
 

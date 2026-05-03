@@ -5,7 +5,7 @@
 ## Top-level fields
 
 | YAML key | Type | Description |
-|---|---|---|
+| --- | --- | --- |
 | `provider` | `Provider` | **Required.** Proxmox endpoint + credentials |
 | `vms` | `list[VMSpec]` | QEMU virtual machines |
 | `containers` | `list[LxcSpec]` | LXC containers |
@@ -14,7 +14,9 @@
 | `ha_rules` | `list[HaRuleSpec]` | HA fencing rules |
 | `backups` | `list[BackupJobSpec]` | Cluster-level backup jobs |
 | `replications` | `list[ReplicationSpec]` | VM/CT replication jobs |
-| `downloads` | `list[DownloadFileSpec]` | ISO / template downloads |
+| `downloads` | `list[DownloadFileSpec]` | ISO / template downloads (Proxmox скачивает по URL) |
+| `uploads` | `list[UploadFileSpec]` | Загрузка файлов с локальной машины через API |
+| `cloned_vms` | `list[ClonedVmSpec]` | Облегчённое клонирование VM (`cloned.Vm/VmLegacy`) |
 | `network_bridges` | `list[NetworkBridgeSpec]` | Linux bridges on nodes |
 | `network_vlans` | `list[NetworkVlanSpec]` | Linux VLANs on nodes |
 | `node_dns` | `list[NodeDnsSpec]` | Per-node DNS config |
