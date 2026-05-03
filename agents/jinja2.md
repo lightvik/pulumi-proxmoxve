@@ -49,27 +49,7 @@ get_X(endpoint, api_token, [resource_id, ...], insecure=False) → dict | list[d
 
 | Name | Source | Description |
 | --- | --- | --- |
-| `from_yaml` | `render_helpers.py` | Parse an inline YAML string → Python object |
-| `to_yaml` | `render_helpers.py` | Serialize a Python object → multi-line YAML string |
 | `load_yaml` | `entrypoint.py` | Load a YAML file by path → Python object; supports `.j2` files (rendered first) |
-
-### `from_yaml(text)` — inline YAML в переменную
-
-```jinja2
-{%- set d = from_yaml("""
-  bios: ovmf
-  machine: q35
-  cpu:
-    cores: 2
-    type: host
-  memory:
-    dedicated: 4096
-    floating: 4096
-""") %}
-
-  bios: {{ d.bios }}
-  cpu: {{ d.cpu | tojson }}
-```
 
 ### `load_yaml(path)` — YAML-файл в переменную
 

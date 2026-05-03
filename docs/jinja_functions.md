@@ -34,80 +34,6 @@
 
 ## Утилиты (без запросов к API)
 
-### `from_yaml(text)`
-
-Парсит inline-строку YAML и возвращает Python-объект. Удобно для хранения дефолтных настроек прямо в шаблоне.
-
-**Пример:**
-```jinja2
-{%- set d = from_yaml("""
-  bios: ovmf
-  machine: q35
-  cpu:
-    cores: 2
-    type: host
-  memory:
-    dedicated: 4096
-    floating: 4096
-""") %}
-
-  bios: {{ d.bios }}
-  cpu: {{ d.cpu | tojson }}
-```
-
-### `to_yaml(obj, indent=2)`
-
-Сериализует Python-объект в многострочную YAML-строку. Завершающий перенос строки обрезается.
-
-**Параметры:**
-
-| Параметр | Тип | По умолчанию | Описание |
-|----------|-----|-------------|----------|
-| `obj` | any | — | Python-объект (dict, list, ...) |
-| `indent` | int | `2` | Отступ вложенных ключей |
-
-**Пример — вывод дефолтов в VM:**
-```jinja2
-{%- set d = from_yaml("""
-  bios: ovmf
-  machine: q35
-  cpu:
-    cores: 2
-    type: host
-  memory:
-    dedicated: 4096
-    floating: 4096
-""") %}
-
-vms:
-  - name: ngfw-master.infra.cry.kz
-    vmid: 6001
-    {{ to_yaml(d) | indent(4) }}
-    disks:
-      - size: 31
-        import_from: local:import/ngfw-master.qcow2
-```
-
-Выведет:
-```yaml
-vms:
-  - name: ngfw-master.infra.cry.kz
-    vmid: 6001
-    bios: ovmf
-    machine: q35
-    cpu:
-      cores: 2
-      type: host
-    memory:
-      dedicated: 4096
-      floating: 4096
-    disks:
-      - size: 31
-        import_from: local:import/ngfw-master.qcow2
-```
-
-> Jinja2-фильтр `indent(N)` не добавляет отступ к **первой** строке — это нужное поведение при встраивании в YAML-блок.
-
 ### `load_yaml(path)`
 
 Читает YAML-файл по пути `path` и возвращает Python-объект. Путь — относительно директории шаблона. Если файл оканчивается на `.j2`, он сначала рендерится как Jinja2-шаблон.
@@ -118,7 +44,7 @@ vms:
   bios: {{ d.bios }}
 ```
 
-> `load_yaml` зарегистрирован в `entrypoint.py`, `from_yaml` — в `render_helpers.py`.
+> `load_yaml` зарегистрирован в `entrypoint.py`.
 
 ---
 
