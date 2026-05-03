@@ -4,7 +4,6 @@ import types
 import urllib.parse
 import urllib.request
 
-import yaml
 
 
 def proxmox_get(endpoint, api_token, path, insecure=False, **params):
