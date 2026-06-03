@@ -278,37 +278,40 @@ def main():
         render_inventory()
         ensure_stack()
 
-        console.print()
-        action = questionary.select(
-            "Выберите действие:",
-            choices=[
-                questionary.Choice("Deploy  (preview → up)", value="deploy"),
-                questionary.Choice("Preview only", value="preview"),
-                questionary.Choice("Refresh  (sync state с Proxmox)", value="refresh"),
-                questionary.Choice("Show outputs", value="outputs"),
-                questionary.Choice("Destroy        (весь стек)", value="destroy"),
-                questionary.Choice(
-                    "Destroy target (выбрать ресурсы)", value="destroy_target"
-                ),
-                questionary.Choice("Exit", value="exit"),
-            ],
-        ).ask()
+        while True:
+            console.print()
+            action = questionary.select(
+                "Выберите действие:",
+                choices=[
+                    questionary.Choice("Deploy  (preview → up)", value="deploy"),
+                    questionary.Choice("Preview only", value="preview"),
+                    questionary.Choice(
+                        "Refresh  (sync state с Proxmox)", value="refresh"
+                    ),
+                    questionary.Choice("Show outputs", value="outputs"),
+                    questionary.Choice("Destroy        (весь стек)", value="destroy"),
+                    questionary.Choice(
+                        "Destroy target (выбрать ресурсы)", value="destroy_target"
+                    ),
+                    questionary.Choice("Exit", value="exit"),
+                ],
+            ).ask()
 
-        if action == "deploy":
-            action_deploy()
-        elif action == "preview":
-            action_preview()
-        elif action == "refresh":
-            action_refresh()
-        elif action == "outputs":
-            show_outputs()
-        elif action == "destroy":
-            action_destroy()
-        elif action == "destroy_target":
-            action_destroy_target()
-        else:
-            console.print("[dim]Выход.[/dim]")
-            sys.exit(0)
+            if action == "deploy":
+                action_deploy()
+            elif action == "preview":
+                action_preview()
+            elif action == "refresh":
+                action_refresh()
+            elif action == "outputs":
+                show_outputs()
+            elif action == "destroy":
+                action_destroy()
+            elif action == "destroy_target":
+                action_destroy_target()
+            else:
+                console.print("[dim]Выход.[/dim]")
+                sys.exit(0)
 
     except subprocess.CalledProcessError as e:
         console.print()
