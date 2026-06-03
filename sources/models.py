@@ -355,6 +355,8 @@ class InitializationSpec(BaseModel):
     file_format: Optional[str] = None
     dns: Optional[InitializationDnsSpec] = None
     ip_configs: Optional[list[InitializationIpConfigSpec]] = None
+    upgrade: Optional[bool] = None
+    user_account: Optional[InitializationUserAccountSpec] = None
     user_data_file_id: Optional[str] = None
     vendor_data_file_id: Optional[str] = None
     meta_data_file_id: Optional[str] = None

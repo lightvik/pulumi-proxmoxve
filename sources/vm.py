@@ -93,6 +93,16 @@ def build_vm(
                 )
                 for c in spec.initialization.ip_configs
             ]
+        if spec.initialization.upgrade is not None:
+            initialization_args["upgrade"] = spec.initialization.upgrade
+        if spec.initialization.user_account:
+            initialization_args["user_account"] = (
+                proxmox.VmLegacyInitializationUserAccountArgs(
+                    username=spec.initialization.user_account.username,
+                    password=spec.initialization.user_account.password,
+                    keys=spec.initialization.user_account.keys,
+                )
+            )
         if spec.initialization.user_data_file_id:
             initialization_args["user_data_file_id"] = (
                 spec.initialization.user_data_file_id
