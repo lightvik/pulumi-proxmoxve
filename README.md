@@ -9,7 +9,7 @@
 
 Инструмент для управления инфраструктурой Proxmox VE через Pulumi (Python).
 
-Конфигурация описывается в одном YAML-файле (`inventory.yaml.j2`), который поддерживает Jinja2-шаблонизацию — включая динамические запросы к Proxmox REST API прямо во время рендеринга. Весь процесс деплоя — интерактивный скрипт внутри Docker-контейнера.
+Конфигурация описывается в одном YAML-файле (`inventory.yaml.j2`), который поддерживает Jinja2-шаблонизацию — включая динамические запросы к Proxmox REST API прямо во время рендеринга. Весь процесс деплоя — интерактивный TUI-скрипт внутри Docker-контейнера.
 
 ## Что можно задеплоить
 
@@ -30,11 +30,23 @@
 
 ## Как это работает
 
-`entrypoint.py` оркестрирует весь цикл:
+При старте контейнера `entrypoint.py`:
 
-1. Если есть `inventory.yaml.j2` — рендерит его в `inventory.yaml` (Jinja2 + Proxmox REST API)
-2. Запускает `pulumi preview` — показывает план изменений
-3. Запрашивает подтверждение, затем выполняет `pulumi up`
+1. Рендерит `inventory.yaml.j2` → `inventory.yaml` (Jinja2 + Proxmox REST API)
+2. Инициализирует Pulumi-стек (создаёт при первом запуске)
+3. Показывает интерактивное меню действий:
+
+```text
+  Deploy        (preview → up)
+  Preview only
+  Refresh       (sync state с Proxmox)
+  Show outputs
+  Destroy       (весь стек)
+  Destroy target (выбрать ресурсы)
+  Exit
+```
+
+**Destroy target** — показывает checkbox-список всех ресурсов стека, позволяет выбрать конкретные и удалить только их через `pulumi destroy --target`.
 
 Все ресурсы управляются одним Pulumi-стеком (`sources/project/`).
 
@@ -43,7 +55,7 @@
 ```text
 pulumi-proxmoxve/
   Dockerfile
-  entrypoint.py            # оркестратор деплоя (рендеринг → preview → up)
+  entrypoint.py            # TUI-оркестратор (меню: deploy / preview / refresh / destroy)
   render_helpers.py        # Jinja2-функции для запросов к Proxmox API
   inventory.yaml.j2        # ваш шаблон конфигурации (gitignore)
   inventory.yaml           # генерируется при запуске (gitignore)
@@ -103,7 +115,7 @@ cp docs/inventory.yaml.j2 inventory.yaml.j2
 
 ```yaml
 provider:
-  endpoint: https://<proxmox-ip>:8006
+  endpoint: {{ env.PROXMOX_ENDPOINT }}
   insecure: true
   api_token: {{ env.PROXMOX_TOKEN }}
 
@@ -120,25 +132,57 @@ vms:
 
 Полный справочник всех параметров: [`docs/inventory.yaml.j2`](docs/inventory.yaml.j2)
 
-### 2. Запустить деплой
+### 2. Создать файл переменных окружения
 
 ```bash
-docker run -it \
-  -v "$(pwd):/workspace" \
-  -e PROXMOX_TOKEN="root@pam!pulumi=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" \
+cp .env.example .env
+```
+
+`.env`:
+
+```dotenv
+PROXMOX_ENDPOINT=https://<proxmox-ip>:8006
+PROXMOX_TOKEN=root@pam!pulumi=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+```
+
+> `.env` содержит секреты — добавьте его в `.gitignore`.
+
+### 3. Запустить
+
+```bash
+docker run \
+  --interactive \
+  --tty \
+  --rm \
+  --volume "$(pwd):/workspace" \
+  --env-file .env \
   ghcr.io/lightvik/pulumi-proxmoxve:latest
 ```
 
-Скрипт интерактивный — перед `pulumi up` запрашивает подтверждение.
+После старта откроется интерактивное меню — выберите действие стрелками, подтвердите Enter.
+
+## Передача дополнительных файлов
+
+Если `inventory.yaml.j2` импортирует qcow2-образы или другие файлы:
+
+```bash
+docker run \
+  --interactive \
+  --tty \
+  --rm \
+  --volume "$(pwd):/workspace" \
+  --volume "/path/to/images:/workspace/images:ro" \
+  --env-file .env \
+  ghcr.io/lightvik/pulumi-proxmoxve:latest
+```
 
 ## Переменные окружения
 
-| Переменная          | Описание                                      |
-|---------------------|-----------------------------------------------|
-| `PROXMOX_TOKEN`     | API-токен Proxmox (если используется в .j2)   |
-| `PROXMOX_ENDPOINT`  | URL Proxmox API (если используется в .j2)     |
-| `PROXMOX_NODE`      | Имя ноды (если используется в .j2)            |
-| Любые другие        | Доступны в шаблоне через `{{ env.VAR }}`      |
+| Переменная | Описание |
+| --- | --- |
+| `PROXMOX_ENDPOINT` | URL Proxmox API, например `https://10.0.0.1:8006` |
+| `PROXMOX_TOKEN` | API-токен в формате `user@realm!id=secret` |
+| Любые другие | Доступны в шаблоне через `{{ env.VAR }}` |
 
 ## Jinja2 в inventory.yaml.j2
 
@@ -169,4 +213,4 @@ sdn:
 
 ## Pulumi state
 
-State сохраняется в `pulumi-state/` внутри примонтированного тома — персистентен между запусками. При первом запуске создаётся автоматически (стек `stack`).
+State сохраняется в `pulumi-state/` внутри примонтированного тома — персистентен между запусками. При первом запуске стек создаётся автоматически.

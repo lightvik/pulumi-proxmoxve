@@ -163,12 +163,6 @@ def action_preview():
 
 def action_refresh():
     console.print()
-    msg = "Синхронизировать Pulumi state с реальным состоянием Proxmox?"
-    if not questionary.confirm(msg, default=False).ask():
-        console.print("[yellow]Отменено.[/yellow]")
-        return
-
-    console.print()
     console.rule("[bold blue]Refresh")
     console.print()
     run(["pulumi", "refresh", "--yes"])
@@ -320,7 +314,8 @@ def main():
         console.print()
         console.print(
             Panel(
-                f"[red]Команда завершилась с кодом {e.returncode}[/red]\n[dim]{' '.join(e.cmd)}[/dim]",
+                f"[red]Команда завершилась с кодом {e.returncode}[/red]\n"
+                f"[dim]{' '.join(e.cmd)}[/dim]",
                 title="[bold red]Ошибка[/bold red]",
                 border_style="red",
             )
