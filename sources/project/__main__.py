@@ -84,6 +84,26 @@ download_resources = [build_download_file(dl, provider) for dl in inv.downloads]
 # ── Uploads (локальные файлы → Proxmox storage) ───────────────────────────────
 upload_resources = [build_upload_file(ul, provider) for ul in inv.uploads]
 
+# Index uploads by import_from key: "{datastore}:{content_type}/{filename}"
+_upload_by_import: dict[str, object] = {}
+for _ul_spec, _ul_res in zip(inv.uploads, upload_resources):
+    import os as _os
+
+    _fname = _ul_spec.source_file.file_name or _os.path.basename(
+        _ul_spec.source_file.path
+    )
+    _ctype = _ul_spec.content_type or "import"
+    _upload_by_import[f"{_ul_spec.datastore}:{_ctype}/{_fname}"] = _ul_res
+
+
+def _vm_upload_deps(spec) -> list:
+    deps = []
+    for disk in spec.disks:
+        if disk.import_from and disk.import_from in _upload_by_import:
+            deps.append(_upload_by_import[disk.import_from])
+    return deps
+
+
 # ── Pools ────────────────────────────────────────────────────────────────────
 pools = {spec.id: build_pool(spec, provider) for spec in inv.pools}
 
@@ -139,7 +159,7 @@ for spec in inv.vms:
         vm = build_vm(
             spec=spec,
             provider=provider,
-            depends_on=(download_resources + upload_resources) or None,
+            depends_on=(download_resources + _vm_upload_deps(spec)) or None,
         )
         vm_resources[spec.name] = vm
         template_by_vmid[spec.vmid] = vm
@@ -147,7 +167,7 @@ for spec in inv.vms:
 for spec in inv.vms:
     if spec.template:
         continue
-    deps: list = upload_resources[:]
+    deps: list = _vm_upload_deps(spec)
     if spec.clone and spec.clone.vm_id in template_by_vmid:
         deps.append(template_by_vmid[spec.clone.vm_id])
     vm = build_vm(
