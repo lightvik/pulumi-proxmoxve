@@ -171,9 +171,9 @@ def build_vm(
     if spec.boot_orders:
         vm_args["boot_orders"] = spec.boot_orders
     vm_args["cdrom"] = proxmox.VmLegacyCdromArgs(
-        file_id=spec.cdrom.file_id if spec.cdrom else None,
-        interface=spec.cdrom.interface if spec.cdrom else None,
-        enabled=spec.cdrom.enabled if spec.cdrom else False,
+        file_id=spec.cdrom.file_id if spec.cdrom else "none",
+        interface=spec.cdrom.interface if spec.cdrom else "ide3",
+        enabled=spec.cdrom.enabled if spec.cdrom else None,
     )
     if spec.delete_unreferenced_disks_on_destroy is not None:
         vm_args["delete_unreferenced_disks_on_destroy"] = (
