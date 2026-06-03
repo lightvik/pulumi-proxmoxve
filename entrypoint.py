@@ -137,7 +137,7 @@ def action_deploy():
     console.print()
     console.rule("[bold blue]Preview")
     console.print()
-    run(["pulumi", "preview"])
+    run(["pulumi", "preview", "--diff"])
 
     console.print()
     if not questionary.confirm("Запустить pulumi up?", default=False).ask():
@@ -147,7 +147,7 @@ def action_deploy():
     console.print()
     console.rule("[bold blue]Deploy")
     console.print()
-    run(["pulumi", "up", "--yes"])
+    run(["pulumi", "up", "--yes", "--diff"])
 
     console.print()
     console.rule("[bold green]Деплой завершён")
@@ -158,7 +158,7 @@ def action_preview():
     console.print()
     console.rule("[bold blue]Preview")
     console.print()
-    run(["pulumi", "preview"])
+    run(["pulumi", "preview", "--diff"])
 
 
 def action_refresh():
