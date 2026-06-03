@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 
 import pulumi
@@ -84,12 +85,10 @@ download_resources = [build_download_file(dl, provider) for dl in inv.downloads]
 # ── Uploads (локальные файлы → Proxmox storage) ───────────────────────────────
 upload_resources = [build_upload_file(ul, provider) for ul in inv.uploads]
 
-import os as _os
-
 # Index: "{datastore}:{content_type}/{filename}" -> resource
 _upload_by_key: dict[str, object] = {}
 for _ul_spec, _ul_res in zip(inv.uploads, upload_resources):
-    _fname = _ul_spec.source_file.file_name or _os.path.basename(
+    _fname = _ul_spec.source_file.file_name or os.path.basename(
         _ul_spec.source_file.path
     )
     _ctype = _ul_spec.content_type or "import"
