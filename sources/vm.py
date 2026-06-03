@@ -240,7 +240,7 @@ def build_vm(
         ]
     if spec.scsi_hardware:
         vm_args["scsi_hardware"] = spec.scsi_hardware
-    if spec.serial_devices:
+    if spec.serial_devices is not None:
         vm_args["serial_devices"] = [
             proxmox.VmLegacySerialDeviceArgs(device=s.device)
             for s in spec.serial_devices
