@@ -90,8 +90,8 @@ class AgentSpec(BaseModel):
     enabled: bool = True
     trim: bool = True
     type: str = "virtio"
-    timeout: Optional[int] = None
-    wait_for_ip: Optional[bool] = None
+    timeout: Optional[int] = 10
+    wait_for_ip: Optional[bool] = False
 
 
 # ============================================================================
