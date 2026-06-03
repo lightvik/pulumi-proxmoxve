@@ -86,12 +86,17 @@ class DiskSpec(BaseModel):
 # ============================================================================
 
 
+class AgentWaitForIpSpec(BaseModel):
+    ipv4: Optional[bool] = None
+    ipv6: Optional[bool] = None
+
+
 class AgentSpec(BaseModel):
     enabled: bool = True
     trim: bool = True
     type: str = "virtio"
-    timeout: Optional[int] = 10
-    wait_for_ip: Optional[bool] = False
+    timeout: Optional[str] = "10s"
+    wait_for_ip: Optional[AgentWaitForIpSpec] = None
 
 
 # ============================================================================

@@ -147,7 +147,12 @@ def build_vm(
             trim=spec.agent.trim,
             type=spec.agent.type,
             timeout=spec.agent.timeout,
-            wait_for_ip=spec.agent.wait_for_ip,
+            wait_for_ip=proxmox.VmLegacyAgentWaitForIpArgs(
+                ipv4=spec.agent.wait_for_ip.ipv4,
+                ipv6=spec.agent.wait_for_ip.ipv6,
+            )
+            if spec.agent.wait_for_ip is not None
+            else None,
         ),
         "network_devices": network_devices,
         "disks": disks,
