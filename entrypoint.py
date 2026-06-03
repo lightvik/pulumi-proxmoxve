@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import json
 import os
 import sys
 import subprocess
@@ -203,6 +204,77 @@ def action_destroy():
     console.rule("[bold green]Destroy завершён")
 
 
+def action_destroy_target():
+    console.print()
+    console.rule("[bold yellow]Destroy Target")
+    console.print()
+
+    with console.status("[cyan]Получение списка ресурсов...", spinner="dots"):
+        result = subprocess.run(
+            ["pulumi", "stack", "export"],
+            cwd=PROJECT_DIR,
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+
+    state = json.loads(result.stdout)
+    resources = state.get("deployment", {}).get("resources", [])
+
+    choices = []
+    for r in resources:
+        rtype = r.get("type", "")
+        if rtype.startswith("pulumi:"):
+            continue
+        urn = r.get("urn", "")
+        name = urn.split("::")[-1] if "::" in urn else urn
+        short_type = rtype.split("/")[-1] if "/" in rtype else rtype.split(":")[-1]
+        choices.append(
+            questionary.Choice(
+                title=f"{name}  [{short_type}]",
+                value=urn,
+            )
+        )
+
+    if not choices:
+        console.print("[yellow]Нет ресурсов для удаления.[/yellow]")
+        return
+
+    selected = questionary.checkbox(
+        "Выберите ресурсы для удаления (пробел — выбрать, Enter — подтвердить):",
+        choices=choices,
+    ).ask()
+
+    if not selected:
+        console.print("[yellow]Ничего не выбрано. Отменено.[/yellow]")
+        return
+
+    console.print()
+    console.print(
+        Panel(
+            "\n".join(f"[red]• {u.split('::')[-1]}[/red]" for u in selected),
+            title="[bold red]Будут удалены:[/bold red]",
+            border_style="red",
+        )
+    )
+
+    if not questionary.confirm("Продолжить?", default=False).ask():
+        console.print("[yellow]Отменено.[/yellow]")
+        return
+
+    cmd = ["pulumi", "destroy", "--yes"]
+    for urn in selected:
+        cmd += ["--target", urn]
+
+    console.print()
+    console.rule("[bold red]Destroy Target")
+    console.print()
+    run(cmd)
+
+    console.print()
+    console.rule("[bold green]Destroy завершён")
+
+
 def main():
     console.print()
     console.rule(f"[bold blue]pulumi-proxmoxve {VERSION}")
@@ -220,7 +292,8 @@ def main():
                 questionary.Choice("Preview only", value="preview"),
                 questionary.Choice("Refresh  (sync state с Proxmox)", value="refresh"),
                 questionary.Choice("Show outputs", value="outputs"),
-                questionary.Choice("Destroy", value="destroy"),
+                questionary.Choice("Destroy        (весь стек)", value="destroy"),
+                questionary.Choice("Destroy target (выбрать ресурсы)", value="destroy_target"),
                 questionary.Choice("Exit", value="exit"),
             ],
         ).ask()
@@ -235,6 +308,8 @@ def main():
             show_outputs()
         elif action == "destroy":
             action_destroy()
+        elif action == "destroy_target":
+            action_destroy_target()
         else:
             console.print("[dim]Выход.[/dim]")
             sys.exit(0)
