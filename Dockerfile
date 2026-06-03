@@ -28,7 +28,8 @@ RUN pip3 install --no-cache-dir \
         pydantic \
         pyyaml \
         jinja2 \
-        rich
+        rich \
+        questionary
 
 RUN pulumi plugin install resource proxmoxve ${PROXMOXVE_VERSION} \
         --server https://github.com/muhlba91/pulumi-proxmoxve/releases/download/v${PROXMOXVE_VERSION} \

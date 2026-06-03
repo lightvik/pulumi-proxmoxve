@@ -5,9 +5,9 @@ import subprocess
 
 import yaml
 import jinja2
+import questionary
 from rich.console import Console
 from rich.panel import Panel
-from rich.prompt import Confirm
 from rich.text import Text
 from rich.table import Table
 from rich import box
@@ -46,7 +46,7 @@ def render_inventory():
         if name.endswith(".j2"):
             content = jenv.get_template(name).render(env=os.environ)
         else:
-            with open(full) as f:
+            with open(full, encoding="utf-8") as f:
                 content = f.read()
         return yaml.safe_load(content)
 
@@ -55,7 +55,7 @@ def render_inventory():
 
     with console.status("[cyan]Рендеринг шаблона...", spinner="dots"):
         rendered = jenv.get_template(tmpl_name).render(env=os.environ)
-        with open(INV, "w") as f:
+        with open(INV, "w", encoding="utf-8") as f:
             f.write(rendered)
 
     console.print(f"[green]✓[/green] inventory.yaml → [dim]{INV}[/dim]")
@@ -71,6 +71,7 @@ def ensure_stack():
         ["pulumi", "stack", "select", PULUMI_STACK],
         cwd=PROJECT_DIR,
         capture_output=True,
+        check=False,
     )
     if result.returncode != 0:
         subprocess.run(
@@ -87,6 +88,7 @@ def get_output(name: str) -> str | None:
         cwd=PROJECT_DIR,
         capture_output=True,
         text=True,
+        check=False,
     )
     return (
         result.stdout.strip()
@@ -99,37 +101,106 @@ def show_outputs():
     vm_ips = get_output("vm_ips")
 
     if not vm_ips:
+        console.print("[dim]Нет доступных outputs.[/dim]")
         return
 
     console.print()
     console.rule("[bold green]Outputs")
 
-    if vm_ips:
-        try:
-            ips = yaml.safe_load(vm_ips)
-            if isinstance(ips, dict):
-                table = Table(box=box.ROUNDED, border_style="cyan", show_header=True)
-                table.add_column("VM", style="bold cyan")
-                table.add_column("IP", style="white")
-                for vm, ip in ips.items():
-                    table.add_row(str(vm), str(ip))
-                console.print(
-                    Panel(table, title="[bold]VM IP Адреса[/bold]", border_style="cyan")
-                )
-            else:
-                console.print(
-                    Panel(
-                        Text(str(vm_ips)),
-                        title="[bold]VM IP Адреса[/bold]",
-                        border_style="cyan",
-                    )
-                )
-        except Exception:
+    try:
+        ips = yaml.safe_load(vm_ips)
+        if isinstance(ips, dict):
+            table = Table(box=box.ROUNDED, border_style="cyan", show_header=True)
+            table.add_column("VM", style="bold cyan")
+            table.add_column("IP", style="white")
+            for vm, ip in ips.items():
+                table.add_row(str(vm), str(ip))
+            console.print(
+                Panel(table, title="[bold]VM IP Адреса[/bold]", border_style="cyan")
+            )
+        else:
             console.print(
                 Panel(
-                    Text(vm_ips), title="[bold]VM IP Адреса[/bold]", border_style="cyan"
+                    Text(str(vm_ips)),
+                    title="[bold]VM IP Адреса[/bold]",
+                    border_style="cyan",
                 )
             )
+    except (yaml.YAMLError, TypeError, AttributeError):
+        console.print(
+            Panel(Text(vm_ips), title="[bold]VM IP Адреса[/bold]", border_style="cyan")
+        )
+
+
+def action_deploy():
+    console.print()
+    console.rule("[bold blue]Preview")
+    console.print()
+    run(["pulumi", "preview"])
+
+    console.print()
+    if not questionary.confirm("Запустить pulumi up?", default=False).ask():
+        console.print("[yellow]Отменено.[/yellow]")
+        return
+
+    console.print()
+    console.rule("[bold blue]Deploy")
+    console.print()
+    run(["pulumi", "up", "--yes"])
+
+    console.print()
+    console.rule("[bold green]Деплой завершён")
+    show_outputs()
+
+
+def action_preview():
+    console.print()
+    console.rule("[bold blue]Preview")
+    console.print()
+    run(["pulumi", "preview"])
+
+
+def action_refresh():
+    console.print()
+    msg = "Синхронизировать Pulumi state с реальным состоянием Proxmox?"
+    if not questionary.confirm(msg, default=False).ask():
+        console.print("[yellow]Отменено.[/yellow]")
+        return
+
+    console.print()
+    console.rule("[bold blue]Refresh")
+    console.print()
+    run(["pulumi", "refresh", "--yes"])
+
+    console.print()
+    console.rule("[bold green]Refresh завершён")
+
+
+def action_destroy():
+    console.print()
+    console.print(
+        Panel(
+            "[bold red]Будут удалены ВСЕ ресурсы стека![/bold red]",
+            border_style="red",
+        )
+    )
+
+    if not questionary.confirm("Вы уверены?", default=False).ask():
+        console.print("[yellow]Отменено.[/yellow]")
+        return
+
+    confirm = questionary.text("Введите 'yes' для подтверждения:").ask()
+    if confirm != "yes":
+        console.print("[yellow]Отменено.[/yellow]")
+        return
+
+    console.print()
+    console.rule("[bold red]Destroy")
+    console.print()
+    run(["pulumi", "destroy", "--yes"])
+
+    console.print()
+    console.rule("[bold green]Destroy завершён")
 
 
 def main():
@@ -142,25 +213,31 @@ def main():
         ensure_stack()
 
         console.print()
-        console.rule("[bold blue]Preview")
-        console.print()
-        run(["pulumi", "preview"])
+        action = questionary.select(
+            "Выберите действие:",
+            choices=[
+                questionary.Choice("Deploy  (preview → up)", value="deploy"),
+                questionary.Choice("Preview only", value="preview"),
+                questionary.Choice("Refresh  (sync state с Proxmox)", value="refresh"),
+                questionary.Choice("Show outputs", value="outputs"),
+                questionary.Choice("Destroy", value="destroy"),
+                questionary.Choice("Exit", value="exit"),
+            ],
+        ).ask()
 
-        console.print()
-        if not Confirm.ask(
-            "[bold yellow]Запустить pulumi up?[/bold yellow]", default=False
-        ):
-            console.print("[red]Отменено.[/red]")
+        if action == "deploy":
+            action_deploy()
+        elif action == "preview":
+            action_preview()
+        elif action == "refresh":
+            action_refresh()
+        elif action == "outputs":
+            show_outputs()
+        elif action == "destroy":
+            action_destroy()
+        else:
+            console.print("[dim]Выход.[/dim]")
             sys.exit(0)
-
-        console.print()
-        console.rule("[bold blue]Deploy")
-        console.print()
-        run(["pulumi", "up", "--yes"])
-
-        console.print()
-        console.rule("[bold green]Деплой завершён")
-        show_outputs()
 
     except subprocess.CalledProcessError as e:
         console.print()
