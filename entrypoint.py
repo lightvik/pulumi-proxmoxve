@@ -288,6 +288,9 @@ def main():
                     questionary.Choice(
                         "Refresh  (sync state с Proxmox)", value="refresh"
                     ),
+                    questionary.Choice(
+                        "Reload config  (перечитать inventory.yaml.j2)", value="reload"
+                    ),
                     questionary.Choice("Show outputs", value="outputs"),
                     questionary.Choice("Destroy        (весь стек)", value="destroy"),
                     questionary.Choice(
@@ -303,6 +306,8 @@ def main():
                 action_preview()
             elif action == "refresh":
                 action_refresh()
+            elif action == "reload":
+                render_inventory()
             elif action == "outputs":
                 show_outputs()
             elif action == "destroy":
