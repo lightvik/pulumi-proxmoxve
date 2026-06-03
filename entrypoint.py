@@ -293,7 +293,9 @@ def main():
                 questionary.Choice("Refresh  (sync state с Proxmox)", value="refresh"),
                 questionary.Choice("Show outputs", value="outputs"),
                 questionary.Choice("Destroy        (весь стек)", value="destroy"),
-                questionary.Choice("Destroy target (выбрать ресурсы)", value="destroy_target"),
+                questionary.Choice(
+                    "Destroy target (выбрать ресурсы)", value="destroy_target"
+                ),
                 questionary.Choice("Exit", value="exit"),
             ],
         ).ask()
