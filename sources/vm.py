@@ -170,12 +170,11 @@ def build_vm(
         vm_args["acpi"] = spec.acpi
     if spec.boot_orders:
         vm_args["boot_orders"] = spec.boot_orders
-    if spec.cdrom:
-        vm_args["cdrom"] = proxmox.VmLegacyCdromArgs(
-            file_id=spec.cdrom.file_id,
-            interface=spec.cdrom.interface,
-            enabled=spec.cdrom.enabled,
-        )
+    vm_args["cdrom"] = proxmox.VmLegacyCdromArgs(
+        file_id=spec.cdrom.file_id if spec.cdrom else None,
+        interface=spec.cdrom.interface if spec.cdrom else None,
+        enabled=spec.cdrom.enabled if spec.cdrom else False,
+    )
     if spec.delete_unreferenced_disks_on_destroy is not None:
         vm_args["delete_unreferenced_disks_on_destroy"] = (
             spec.delete_unreferenced_disks_on_destroy
