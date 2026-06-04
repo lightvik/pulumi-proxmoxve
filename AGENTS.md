@@ -49,6 +49,15 @@ pulumi-proxmoxve/
     └── jinja_functions.md        # reference for all render_helpers.py functions
 ```
 
+## Before committing
+
+Always run before every commit to avoid CI failures:
+
+```bash
+uvx ruff format .
+uvx ruff check .
+```
+
 ## Critical rules
 
 - **Never pass `None` to SDK kwargs.** All optional fields must be guarded: `if spec.foo is not None`.
