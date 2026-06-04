@@ -134,6 +134,8 @@ def show_outputs():
 
 
 def action_deploy():
+    render_inventory()
+
     console.print()
     console.rule("[bold blue]Preview")
     console.print()
@@ -155,6 +157,8 @@ def action_deploy():
 
 
 def action_preview():
+    render_inventory()
+
     console.print()
     console.rule("[bold blue]Preview")
     console.print()
@@ -173,9 +177,34 @@ def action_refresh():
 
 def action_destroy():
     console.print()
+    console.rule("[bold red]Destroy")
+    console.print()
+
+    with console.status("[cyan]Получение списка ресурсов...", spinner="dots"):
+        result = subprocess.run(
+            ["pulumi", "stack", "export"],
+            cwd=PROJECT_DIR,
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+
+    state = json.loads(result.stdout)
+    resources = state.get("deployment", {}).get("resources", [])
+    names = [
+        r.get("urn", "").split("::")[-1]
+        for r in resources
+        if not r.get("type", "").startswith("pulumi:")
+    ]
+
+    if not names:
+        console.print("[dim]Стек пуст.[/dim]")
+        return
+
     console.print(
         Panel(
-            "[bold red]Будут удалены ВСЕ ресурсы стека![/bold red]",
+            "\n".join(f"[red]• {n}[/red]" for n in names),
+            title="[bold red]Будут удалены ВСЕ ресурсы стека:[/bold red]",
             border_style="red",
         )
     )
@@ -189,8 +218,6 @@ def action_destroy():
         console.print("[yellow]Отменено.[/yellow]")
         return
 
-    console.print()
-    console.rule("[bold red]Destroy")
     console.print()
     run(["pulumi", "destroy", "--yes"])
 
@@ -297,9 +324,6 @@ def main():
                     questionary.Choice(
                         "Refresh  (sync state с Proxmox)", value="refresh"
                     ),
-                    questionary.Choice(
-                        "Reload config  (перечитать inventory.yaml.j2)", value="reload"
-                    ),
                     questionary.Choice("Show outputs", value="outputs"),
                     questionary.Choice("Destroy        (весь стек)", value="destroy"),
                     questionary.Choice(
@@ -318,8 +342,6 @@ def main():
                 action_preview()
             elif action == "refresh":
                 action_refresh()
-            elif action == "reload":
-                render_inventory()
             elif action == "outputs":
                 show_outputs()
             elif action == "destroy":
