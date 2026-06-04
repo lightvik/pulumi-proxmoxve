@@ -121,9 +121,13 @@ def build_vm(
             )
         initialization = proxmox.VmLegacyInitializationArgs(**initialization_args)
 
+    ignore_changes = [
+        f"disks[{i}].speed" for i, d in enumerate(spec.disks) if not d.speed
+    ]
     opts = pulumi.ResourceOptions(
         provider=provider,
         depends_on=depends_on or [],
+        ignore_changes=ignore_changes or None,
     )
 
     vm_args = {
