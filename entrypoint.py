@@ -17,7 +17,7 @@ sys.path.insert(0, "/")
 from render_helpers import JINJA2_GLOBALS
 
 WORKSPACE = "/workspace"
-PROJECT_DIR = f"{WORKSPACE}/sources/project"
+PROJECT_DIR = "/app/sources/project"
 INV = f"{WORKSPACE}/inventory.yaml"
 PULUMI_STACK = "stack"
 

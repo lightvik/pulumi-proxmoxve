@@ -38,13 +38,14 @@ RUN pulumi plugin install resource proxmoxve ${PROXMOXVE_VERSION} \
 ENV PULUMI_BACKEND_URL=file:///workspace/pulumi-state
 ENV PULUMI_CONFIG_PASSPHRASE=""
 ENV PULUMI_PYTHON_CMD=python3
-ENV PYTHONPATH=/workspace/sources
+ENV PYTHONPATH=/app/sources
 ENV PULUMI_VERSION=${PULUMI_VERSION}
 ENV PROXMOXVE_VERSION=${PROXMOXVE_VERSION}
 ENV PROJECT_VERSION=${PROJECT_VERSION}
 
 WORKDIR /workspace
 
+COPY sources/ /app/sources/
 COPY entrypoint.py /entrypoint.py
 COPY render_helpers.py /render_helpers.py
 RUN chmod +x /entrypoint.py
