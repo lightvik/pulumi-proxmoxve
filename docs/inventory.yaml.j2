@@ -53,6 +53,25 @@ provider:
   endpoint: {{ env.PROXMOX_ENDPOINT }} # Формат:  https://<host-or-ip>:8006
   insecure: true
   api_token: {{ env.PROXMOX_TOKEN }}   # Формат токена: user@realm!token-id=token-secret
+  # ssh — требуется в двух случаях:
+  #   1. uploads с content_type: snippets или backup (FileLegacy передаёт файл по SSH)
+  #   2. containers с полем idmaps (Proxmox API не поддерживает lxc.idmap — пишется по SSH)
+  #
+  # Приоритет аутентификации: agent > private_key > password
+  #
+  # ssh:
+  #   username: root                                    # SSH-пользователь на ноде Proxmox
+  #
+  #   # Вариант 1: приватный ключ (PEM, без passphrase)
+  #   private_key: {{ env.PROXMOX_SSH_PRIVATE_KEY }}
+  #
+  #   # Вариант 2: пароль
+  #   password: {{ env.PROXMOX_SSH_PASSWORD }}
+  #
+  #   # Вариант 3: ssh-agent (ключ уже загружен через ssh-add)
+  #   agent: true
+  #   agent_socket: /tmp/ssh-agent.sock                # по умолчанию берётся из $SSH_AUTH_SOCK
+  #   agent_forwarding: false                          # проброс агента дальше по цепочке
 
 # ==============================================================================
 # NETWORK BRIDGES  —  Linux-бриджи на узлах Proxmox (опционально)

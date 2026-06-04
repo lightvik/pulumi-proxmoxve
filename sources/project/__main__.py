@@ -35,11 +35,22 @@ from storage import build_storages
 INV_PATH = Path("/workspace/inventory.yaml")
 inv = load_inventory(INV_PATH)
 
+_ssh_args = None
+if inv.provider.ssh:
+    s = inv.provider.ssh
+    _ssh_args = proxmox.ProviderSshArgs(
+        username=s.username,
+        password=s.password,
+        private_key=s.private_key,
+        agent=s.agent,
+    )
+
 provider = proxmox.Provider(
     "proxmox",
     endpoint=inv.provider.endpoint,
     insecure=inv.provider.insecure,
     api_token=inv.provider.api_token,
+    ssh=_ssh_args,
 )
 
 # ── RBAC (roles / groups / users / tokens / ACLs / realms) ───────────────────

@@ -10,10 +10,18 @@ from pydantic import BaseModel, model_validator
 # ============================================================================
 
 
+class ProviderSshSpec(BaseModel):
+    username: Optional[str] = None
+    password: Optional[str] = None
+    private_key: Optional[str] = None
+    agent: Optional[bool] = None
+
+
 class Provider(BaseModel):
     endpoint: str
     insecure: bool = False
     api_token: Optional[str] = None
+    ssh: Optional[ProviderSshSpec] = None
 
 
 # ============================================================================
