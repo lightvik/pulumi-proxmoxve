@@ -198,6 +198,15 @@ def action_destroy():
     console.rule("[bold green]Destroy завершён")
 
 
+def action_cancel():
+    console.print()
+    console.rule("[bold yellow]Cancel")
+    console.print()
+    run(["pulumi", "cancel", "--yes"])
+    console.print()
+    console.rule("[bold green]Блокировка снята")
+
+
 def action_destroy_target():
     console.print()
     console.rule("[bold yellow]Destroy Target")
@@ -296,6 +305,9 @@ def main():
                     questionary.Choice(
                         "Destroy target (выбрать ресурсы)", value="destroy_target"
                     ),
+                    questionary.Choice(
+                        "Cancel         (снять блокировку стека)", value="cancel"
+                    ),
                     questionary.Choice("Exit", value="exit"),
                 ],
             ).ask()
@@ -314,6 +326,8 @@ def main():
                 action_destroy()
             elif action == "destroy_target":
                 action_destroy_target()
+            elif action == "cancel":
+                action_cancel()
             else:
                 console.print("[dim]Выход.[/dim]")
                 sys.exit(0)
