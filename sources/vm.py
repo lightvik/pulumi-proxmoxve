@@ -123,11 +123,11 @@ def build_vm(
 
     ignore_changes = [
         f"disks[{i}].speed" for i, d in enumerate(spec.disks) if not d.speed
-    ]
+    ] + ["ipv4Addresses", "ipv6Addresses", "networkInterfaceNames", "macAddresses"]
     opts = pulumi.ResourceOptions(
         provider=provider,
         depends_on=depends_on or [],
-        ignore_changes=ignore_changes or None,
+        ignore_changes=ignore_changes,
     )
 
     vm_args = {
