@@ -169,7 +169,7 @@ def action_refresh():
     console.print()
     console.rule("[bold blue]Refresh")
     console.print()
-    run(["pulumi", "refresh", "--yes"])
+    run(["pulumi", "refresh", "--yes", "--skip-preview"])
 
     console.print()
     console.rule("[bold green]Refresh завершён")
