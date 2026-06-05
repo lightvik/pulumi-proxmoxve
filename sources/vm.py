@@ -134,7 +134,7 @@ def build_vm(
         "node_name": spec.node,
         "vm_id": spec.vmid,
         "name": spec.name,
-        "description": f"Managed by Pulumi — {spec.name}",
+        "description": spec.description or "",
         "tags": spec.tags or ["pulumi"],
         "bios": spec.bios,
         "cpu": proxmox.VmLegacyCpuArgs(

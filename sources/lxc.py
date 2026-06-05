@@ -64,7 +64,7 @@ def build_container(
     ct_args: dict = {
         "node_name": spec.node,
         "vm_id": spec.vmid,
-        "description": f"Managed by Pulumi — {spec.name}",
+        "description": spec.description or "",
         "tags": spec.tags or ["pulumi"],
         "cpu": proxmox.ContainerLegacyCpuArgs(
             cores=spec.cpu.cores,

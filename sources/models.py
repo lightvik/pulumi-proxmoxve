@@ -1121,6 +1121,7 @@ class VMSpec(BaseModel):
     vmid: int
     node: str
     networks: list[NetworkDeviceSpec]
+    description: Optional[str] = None
     cpu: CpuSpec = CpuSpec()
     memory: MemorySpec = MemorySpec()
     disks: list[DiskSpec] = []
@@ -1216,6 +1217,7 @@ class LxcSpec(BaseModel):
     vmid: int
     node: str
     networks: list[LxcNetworkInterfaceSpec]
+    description: Optional[str] = None
     cpu: LxcCpuSpec = LxcCpuSpec()
     memory: LxcMemorySpec = LxcMemorySpec()
     disk: LxcDiskSpec = LxcDiskSpec()
