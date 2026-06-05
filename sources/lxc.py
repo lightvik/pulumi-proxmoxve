@@ -88,6 +88,7 @@ def build_container(
         "opts": pulumi.ResourceOptions(
             provider=provider,
             depends_on=depends_on or [],
+            ignore_changes=["started"] if spec.started == "keep" else None,
         ),
     }
 
@@ -143,7 +144,7 @@ def build_container(
         ct_args["pool_id"] = spec.pool_id
     if spec.protection is not None:
         ct_args["protection"] = spec.protection
-    if spec.started is not None:
+    if spec.started is not None and spec.started != "keep":
         ct_args["started"] = spec.started
     if spec.template is not None:
         ct_args["template"] = spec.template

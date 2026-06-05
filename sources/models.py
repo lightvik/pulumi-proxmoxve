@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Optional
+from typing import Literal, Optional
 
 from pydantic import BaseModel, model_validator
 
@@ -1170,7 +1170,7 @@ class VMSpec(BaseModel):
     virtiofs: Optional[list[VirtiofSpec]] = None
     watchdog: Optional[WatchdogSpec] = None
     numas: Optional[list[NumaSpec]] = None
-    started: Optional[bool] = None
+    started: Optional[bool | Literal["keep"]] = None
     initialization: Optional[InitializationSpec] = None
     ha: Optional[HaSpec] = None
     clone: Optional[CloneSpec] = None
@@ -1199,7 +1199,7 @@ class ClonedVmSpec(BaseModel):
     clone: ClonedVmCloneSpec
     description: Optional[str] = None
     tags: list[str] = []
-    started: Optional[bool] = None
+    started: Optional[bool | Literal["keep"]] = None
     stop_on_destroy: Optional[bool] = None
     purge_on_destroy: Optional[bool] = None
     delete_unreferenced_disks_on_destroy: Optional[bool] = None
@@ -1229,7 +1229,7 @@ class LxcSpec(BaseModel):
     startup: Optional[StartupSpec] = None
     pool_id: Optional[str] = None
     protection: Optional[bool] = None
-    started: Optional[bool] = None
+    started: Optional[bool | Literal["keep"]] = None
     tags: Optional[list[str]] = None
     template: Optional[bool] = None
     hook_script_file_id: Optional[str] = None

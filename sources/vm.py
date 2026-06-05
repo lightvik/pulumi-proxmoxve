@@ -363,7 +363,9 @@ def build_vm(
             )
             for n in spec.numas
         ]
-    if spec.started is not None:
+    if spec.started == "keep":
+        ignore_changes.append("started")
+    elif spec.started is not None:
         vm_args["started"] = spec.started
 
     return proxmox.VmLegacy(spec.name, **vm_args)

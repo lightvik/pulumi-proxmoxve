@@ -9,9 +9,13 @@ def build_cloned_vm(
     provider: proxmox.Provider,
     depends_on: list | None = None,
 ) -> proxmox.cloned.VmLegacy | proxmox.cloned.Vm:
+    ignore_changes: list[str] = []
+    if spec.started == "keep":
+        ignore_changes.append("started")
     opts = pulumi.ResourceOptions(
         provider=provider,
         depends_on=depends_on or [],
+        ignore_changes=ignore_changes or None,
     )
 
     c = spec.clone
@@ -36,7 +40,7 @@ def build_cloned_vm(
             vm_args["description"] = spec.description
         if spec.tags:
             vm_args["tags"] = spec.tags
-        if spec.started is not None:
+        if spec.started is not None and spec.started != "keep":
             vm_args["started"] = spec.started
         if spec.stop_on_destroy is not None:
             vm_args["stop_on_destroy"] = spec.stop_on_destroy
@@ -67,7 +71,7 @@ def build_cloned_vm(
         vm_args_new["description"] = spec.description
     if spec.tags:
         vm_args_new["tags"] = spec.tags
-    if spec.started is not None:
+    if spec.started is not None and spec.started != "keep":
         vm_args_new["started"] = spec.started
     if spec.stop_on_destroy is not None:
         vm_args_new["stop_on_destroy"] = spec.stop_on_destroy
