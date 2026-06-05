@@ -137,6 +137,11 @@ def action_deploy():
     render_inventory()
 
     console.print()
+    console.rule("[bold blue]Refresh")
+    console.print()
+    run(["pulumi", "refresh", "--yes", "--skip-preview"])
+
+    console.print()
     console.rule("[bold blue]Preview")
     console.print()
     run(["pulumi", "preview", "--diff"])
@@ -176,6 +181,11 @@ def action_refresh():
 
 
 def action_destroy():
+    console.print()
+    console.rule("[bold blue]Refresh")
+    console.print()
+    run(["pulumi", "refresh", "--yes", "--skip-preview"])
+
     console.print()
     console.rule("[bold red]Destroy")
     console.print()
@@ -235,6 +245,11 @@ def action_cancel():
 
 
 def action_destroy_target():
+    console.print()
+    console.rule("[bold blue]Refresh")
+    console.print()
+    run(["pulumi", "refresh", "--yes", "--skip-preview"])
+
     console.print()
     console.rule("[bold yellow]Destroy Target")
     console.print()
