@@ -173,7 +173,6 @@ if inv.sdn:
 
 # ── VMs ──────────────────────────────────────────────────────────────────────
 # Two-pass: templates first so clones can declare depends_on.
-vm_resources: dict[str, proxmox.VmLegacy] = {}
 template_by_vmid: dict[int, proxmox.VmLegacy] = {}
 
 for spec in inv.vms:
@@ -183,7 +182,6 @@ for spec in inv.vms:
             provider=provider,
             depends_on=(download_resources + _vm_file_deps(spec)) or None,
         )
-        vm_resources[spec.name] = vm
         template_by_vmid[spec.vmid] = vm
 
 for spec in inv.vms:
@@ -197,7 +195,6 @@ for spec in inv.vms:
         provider=provider,
         depends_on=deps or None,
     )
-    vm_resources[spec.name] = vm
 
     if spec.ha and spec.ha.enabled:
         build_ha_resource(spec, vm, provider)
@@ -215,22 +212,3 @@ for spec in inv.containers:
         provider=provider,
     )
     container_resources[spec.name] = ct
-
-# ── Outputs ──────────────────────────────────────────────────────────────────
-template_vm_names = {s.name for s in inv.vms if s.template}
-pulumi.export(
-    "vm_ips",
-    pulumi.Output.all(
-        **{
-            name: vm.initialization.apply(
-                lambda init: (
-                    init.ip_configs[0].ipv4.address
-                    if init and init.ip_configs and init.ip_configs[0].ipv4
-                    else "unknown"
-                )
-            )
-            for name, vm in vm_resources.items()
-            if name not in template_vm_names
-        }
-    ),
-)

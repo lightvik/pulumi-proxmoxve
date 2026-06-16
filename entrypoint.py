@@ -9,9 +9,6 @@ import jinja2
 import questionary
 from rich.console import Console
 from rich.panel import Panel
-from rich.text import Text
-from rich.table import Table
-from rich import box
 
 sys.path.insert(0, "/")
 from render_helpers import JINJA2_GLOBALS
@@ -83,56 +80,6 @@ def ensure_stack():
         )
 
 
-def get_output(name: str) -> str | None:
-    result = subprocess.run(
-        ["pulumi", "stack", "output", name, "--show-secrets"],
-        cwd=PROJECT_DIR,
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-    return (
-        result.stdout.strip()
-        if result.returncode == 0 and result.stdout.strip()
-        else None
-    )
-
-
-def show_outputs():
-    vm_ips = get_output("vm_ips")
-
-    if not vm_ips:
-        console.print("[dim]Нет доступных outputs.[/dim]")
-        return
-
-    console.print()
-    console.rule("[bold green]Outputs")
-
-    try:
-        ips = yaml.safe_load(vm_ips)
-        if isinstance(ips, dict):
-            table = Table(box=box.ROUNDED, border_style="cyan", show_header=True)
-            table.add_column("VM", style="bold cyan")
-            table.add_column("IP", style="white")
-            for vm, ip in ips.items():
-                table.add_row(str(vm), str(ip))
-            console.print(
-                Panel(table, title="[bold]VM IP Адреса[/bold]", border_style="cyan")
-            )
-        else:
-            console.print(
-                Panel(
-                    Text(str(vm_ips)),
-                    title="[bold]VM IP Адреса[/bold]",
-                    border_style="cyan",
-                )
-            )
-    except (yaml.YAMLError, TypeError, AttributeError):
-        console.print(
-            Panel(Text(vm_ips), title="[bold]VM IP Адреса[/bold]", border_style="cyan")
-        )
-
-
 def action_deploy():
     render_inventory()
 
@@ -158,7 +105,6 @@ def action_deploy():
 
     console.print()
     console.rule("[bold green]Деплой завершён")
-    show_outputs()
 
 
 def action_preview():
@@ -339,7 +285,6 @@ def main():
                     questionary.Choice(
                         "Refresh  (sync state с Proxmox)", value="refresh"
                     ),
-                    questionary.Choice("Show outputs", value="outputs"),
                     questionary.Choice("Destroy        (весь стек)", value="destroy"),
                     questionary.Choice(
                         "Destroy target (выбрать ресурсы)", value="destroy_target"
@@ -357,8 +302,6 @@ def main():
                 action_preview()
             elif action == "refresh":
                 action_refresh()
-            elif action == "outputs":
-                show_outputs()
             elif action == "destroy":
                 action_destroy()
             elif action == "destroy_target":

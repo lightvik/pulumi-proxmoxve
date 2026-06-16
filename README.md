@@ -40,7 +40,6 @@
   Deploy        (preview → up)
   Preview only
   Refresh       (sync state с Proxmox)
-  Show outputs
   Destroy       (весь стек)
   Destroy target (выбрать ресурсы)
   Exit
