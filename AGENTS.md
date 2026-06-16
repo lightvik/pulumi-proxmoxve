@@ -66,4 +66,4 @@ uvx ruff check .
 - **`entrypoint.py` uses `rich`** for all terminal output (panels, rules, spinners, tables). It imports `render_helpers.JINJA2_GLOBALS` directly — no subprocess/heredoc.
 - **Adding a resource type requires 4 files** — see [agents/builders.md](agents/builders.md).
 - **`Inventory` in `sources/models.py` is the only root model.** Every new top-level section must be added there.
-- **`pulumi-proxmoxve` version is pinned to `8.0.0`** in `Dockerfile`. Check the SDK for available resource/arg names before writing builder code.
+- **`pulumi-proxmoxve` version is pinned to `8.2.1`** in `Dockerfile` (defaults overridden by the release tag in CI). Check the SDK for available resource/arg names before writing builder code.
