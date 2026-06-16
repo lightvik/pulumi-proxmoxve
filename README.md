@@ -153,6 +153,7 @@ docker run \
   --interactive \
   --tty \
   --rm \
+  --network host \
   --volume "$(pwd):/workspace" \
   --env-file .env \
   ghcr.io/lightvik/pulumi-proxmoxve:latest
@@ -169,6 +170,7 @@ docker run \
   --interactive \
   --tty \
   --rm \
+  --network host \
   --volume "$(pwd):/workspace" \
   --volume "/path/to/images:/workspace/images:ro" \
   --env-file .env \
