@@ -273,7 +273,9 @@ def build_vm(
             uuid=spec.smbios.uuid,
             version=spec.smbios.version,
         )
-    if spec.startup:
+    if spec.startup == "keep":
+        ignore_changes.append("startup")
+    elif spec.startup:
         vm_args["startup"] = proxmox.VmLegacyStartupArgs(
             order=spec.startup.order,
             up_delay=spec.startup.up_delay,

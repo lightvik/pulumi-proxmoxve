@@ -1152,7 +1152,7 @@ class VMSpec(BaseModel):
     scsi_hardware: Optional[str] = None
     serial_devices: Optional[list[SerialDeviceSpec]] = None
     smbios: Optional[SmbiosSpec] = None
-    startup: Optional[StartupSpec] = None
+    startup: Optional[StartupSpec | Literal["keep"]] = None
     stop_on_destroy: Optional[bool] = None
     tablet_device: Optional[bool] = None
     tags: Optional[list[str]] = None
@@ -1228,7 +1228,7 @@ class LxcSpec(BaseModel):
     clone: Optional[LxcCloneSpec] = None
     unprivileged: Optional[bool] = None
     start_on_boot: Optional[bool] = None
-    startup: Optional[StartupSpec] = None
+    startup: Optional[StartupSpec | Literal["keep"]] = None
     pool_id: Optional[str] = None
     protection: Optional[bool] = None
     started: Optional[bool | Literal["keep"]] = None

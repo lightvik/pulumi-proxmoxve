@@ -61,6 +61,12 @@ def build_container(
             )
     initialization = proxmox.ContainerLegacyInitializationArgs(**initialization_args)
 
+    ignore_changes: list[str] = []
+    if spec.started == "keep":
+        ignore_changes.append("started")
+    if spec.startup == "keep":
+        ignore_changes.append("startup")
+
     ct_args: dict = {
         "node_name": spec.node,
         "vm_id": spec.vmid,
@@ -88,7 +94,7 @@ def build_container(
         "opts": pulumi.ResourceOptions(
             provider=provider,
             depends_on=depends_on or [],
-            ignore_changes=["started"] if spec.started == "keep" else None,
+            ignore_changes=ignore_changes or None,
         ),
     }
 
@@ -134,7 +140,7 @@ def build_container(
         ct_args["unprivileged"] = spec.unprivileged
     if spec.start_on_boot is not None:
         ct_args["start_on_boot"] = spec.start_on_boot
-    if spec.startup:
+    if spec.startup and spec.startup != "keep":
         ct_args["startup"] = proxmox.ContainerLegacyStartupArgs(
             order=spec.startup.order,
             up_delay=spec.startup.up_delay,
