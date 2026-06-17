@@ -1141,7 +1141,7 @@ class VMSpec(BaseModel):
     kvm_arguments: Optional[str] = None
     machine: Optional[str] = None
     migrate: Optional[bool] = None
-    on_boot: Optional[bool] = None
+    on_boot: Optional[bool | Literal["keep"]] = None
     operating_system: Optional[OperatingSystemSpec] = None
     pool_id: Optional[str] = None
     protection: Optional[bool] = None
@@ -1227,7 +1227,7 @@ class LxcSpec(BaseModel):
     features: Optional[LxcFeaturesSpec] = None
     clone: Optional[LxcCloneSpec] = None
     unprivileged: Optional[bool] = None
-    start_on_boot: Optional[bool] = None
+    start_on_boot: Optional[bool | Literal["keep"]] = None
     startup: Optional[StartupSpec | Literal["keep"]] = None
     pool_id: Optional[str] = None
     protection: Optional[bool] = None

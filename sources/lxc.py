@@ -66,6 +66,8 @@ def build_container(
         ignore_changes.append("started")
     if spec.startup == "keep":
         ignore_changes.append("startup")
+    if spec.start_on_boot == "keep":
+        ignore_changes.append("startOnBoot")
 
     ct_args: dict = {
         "node_name": spec.node,
@@ -138,7 +140,7 @@ def build_container(
 
     if spec.unprivileged is not None:
         ct_args["unprivileged"] = spec.unprivileged
-    if spec.start_on_boot is not None:
+    if spec.start_on_boot is not None and spec.start_on_boot != "keep":
         ct_args["start_on_boot"] = spec.start_on_boot
     if spec.startup and spec.startup != "keep":
         ct_args["startup"] = proxmox.ContainerLegacyStartupArgs(

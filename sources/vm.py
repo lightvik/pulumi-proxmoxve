@@ -231,7 +231,9 @@ def build_vm(
         vm_args["machine"] = spec.machine
     if spec.migrate is not None:
         vm_args["migrate"] = spec.migrate
-    if spec.on_boot is not None:
+    if spec.on_boot == "keep":
+        ignore_changes.append("onBoot")
+    elif spec.on_boot is not None:
         vm_args["on_boot"] = spec.on_boot
     if spec.operating_system:
         vm_args["operating_system"] = proxmox.VmLegacyOperatingSystemArgs(
