@@ -117,7 +117,7 @@ class NetworkDeviceSpec(BaseModel):
     model: str = "virtio"
     enabled: Optional[bool] = None
     disconnected: Optional[bool] = None
-    firewall: Optional[bool] = None
+    firewall: Optional[bool] = True  # GUI default on (provider default is false)
     mac_address: Optional[str] = None
     mtu: Optional[int] = None
     queues: Optional[int] = None
@@ -1073,7 +1073,7 @@ class LxcNetworkInterfaceSpec(BaseModel):
     bridge: str
     name: Optional[str] = None  # auto-assigned as eth{i} if None
     enabled: Optional[bool] = None
-    firewall: Optional[bool] = None
+    firewall: Optional[bool] = True  # GUI default on (provider default is false)
     mac_address: Optional[str] = None
     mtu: Optional[int] = None
     rate_limit: Optional[float] = None  # MB/s
