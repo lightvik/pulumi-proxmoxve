@@ -86,7 +86,7 @@ def action_deploy():
     console.print()
     console.rule("[bold blue]Refresh")
     console.print()
-    run(["pulumi", "refresh", "--yes", "--skip-preview"])
+    run(["pulumi", "refresh", "--yes", "--skip-preview", "--run-program"])
 
     console.print()
     console.rule("[bold blue]Preview")
@@ -120,7 +120,7 @@ def action_refresh():
     console.print()
     console.rule("[bold blue]Refresh")
     console.print()
-    run(["pulumi", "refresh", "--yes", "--skip-preview"])
+    run(["pulumi", "refresh", "--yes", "--skip-preview", "--run-program"])
 
     console.print()
     console.rule("[bold green]Refresh завершён")
@@ -130,7 +130,7 @@ def action_destroy():
     console.print()
     console.rule("[bold blue]Refresh")
     console.print()
-    run(["pulumi", "refresh", "--yes", "--skip-preview"])
+    run(["pulumi", "refresh", "--yes", "--skip-preview", "--run-program"])
 
     console.print()
     console.rule("[bold red]Destroy")
@@ -194,7 +194,7 @@ def action_destroy_target():
     console.print()
     console.rule("[bold blue]Refresh")
     console.print()
-    run(["pulumi", "refresh", "--yes", "--skip-preview"])
+    run(["pulumi", "refresh", "--yes", "--skip-preview", "--run-program"])
 
     console.print()
     console.rule("[bold yellow]Destroy Target")
